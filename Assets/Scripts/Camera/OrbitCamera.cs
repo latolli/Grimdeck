@@ -110,24 +110,23 @@ public class OrbitCamera : MonoBehaviour
             easedProgress);
     }
 
-    public void SetCombatCameraPosition(Vector3 playerPosition, Vector3 combatCenter)
+    public void SetCombatCameraPosition(Vector3 firstPlayerPos, Vector3 combatCenter)
     {
         // Find out final camera position for the combat
         Vector3 finalCameraPosition = combatCenter;
-        Vector3 diff = combatCenter - playerPosition;
-        if (diff.x > 0.0)
-        {
-            finalCameraPosition += new Vector3(0, 10, -6);
-        }
-        else if (diff.x < 0.0)
+        if (firstPlayerPos.x > 0.0)
         {
             finalCameraPosition += new Vector3(0, 10, 6);
         }
-        else if (diff.z > 0.0)
+        else if (firstPlayerPos.x < 0.0)
+        {
+            finalCameraPosition += new Vector3(0, 10, -6);
+        }
+        else if (firstPlayerPos.z > 0.0)
         {
             finalCameraPosition += new Vector3(-6, 10, 0);
         }
-        else if (diff.z < 0.0)
+        else if (firstPlayerPos.z < 0.0)
         {
             finalCameraPosition += new Vector3(6, 10, 0);
         }

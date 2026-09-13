@@ -19,21 +19,6 @@ public class CombatManager : MonoBehaviour
     private OrbitCamera orbitCamera;
     public int numPlayers = 1;  // Hardcoded for now, can be set dynamically later
 
-    // TODO: Fix default positions, these assume that combat is oriented same way every time
-    public Vector3[] defaultEnemyPositions = new Vector3[]
-    {
-        new Vector3(2, 0, 0),
-        new Vector3(3, 0, -2),
-        new Vector3(3, 0, 2)
-    };
-
-    public Vector3[] defaultPlayerPositions = new Vector3[]
-    {
-        new Vector3(-2, 0, 0),
-        new Vector3(-3, 0, -2),
-        new Vector3(-3, 0, 2)
-    };
-
     void Awake() => Instance = this;
 
     void Start()
@@ -68,20 +53,46 @@ public class CombatManager : MonoBehaviour
     {
         // Check player positions and enemy positions, if they are not set, use defaults
         Vector3[] playerTiles = new Vector3[numPlayers];
-        for (int i = 0; i < numPlayers; i++)
+        Vector3[] defaultPositions = new Vector3[numPlayers + currentEncounter.enemyIds.Length];
+        Vector3 firstPlayerPos = currentEncounter.relativePlayerPositions[0];
+        if (firstPlayerPos == null)
         {
-            if (currentEncounter.playerPositions.Length > i)
+            Debug.LogError("At least one player position needed");
+            return;
+        }
+        // Check rest of player positions
+        for (int i = 1; i < numPlayers; i++)
+        {
+            // First, add any x or z offset that first player has to center
+            Vector3 newPlayerPos = firstPlayerPos + firstPlayerPos;
+            // Then, add offsets in either X or Z axis depending on the orientation
+            Vector3 offsetVector = firstPlayerPos.x == 0 ? new Vector3(2,0,0) : new Vector3(0,0,2);
+            if (i % 2 == 0)
             {
-                playerTiles[i] = currentEncounter.encounterCenter + currentEncounter.playerPositions[i];
+                newPlayerPos += offsetVector;
             }
             else
             {
-                playerTiles[i] = currentEncounter.encounterCenter + defaultPlayerPositions[i];
+                newPlayerPos -= offsetVector;
+            }
+            defaultPositions[i] = newPlayerPos;
+            Debug.Log("Combat position:" + i + newPlayerPos);
+        }
+
+        for (int i = 0; i < numPlayers; i++)
+        {
+            if (currentEncounter.relativePlayerPositions.Length > i)
+            {
+                playerTiles[i] = currentEncounter.encounterCenter + currentEncounter.relativePlayerPositions[i];
+            }
+            else
+            {
+                playerTiles[i] = currentEncounter.encounterCenter + defaultPositions[i];
             }
             //playerMovement.MovePlayerToTile(playerTiles[i]);
         }
         // Set camera to combat position
-        orbitCamera.SetCombatCameraPosition(playerTiles[0], currentEncounter.encounterCenter);
+        orbitCamera.SetCombatCameraPosition(firstPlayerPos, currentEncounter.encounterCenter);
         // Move players
         playerMovement.MovePlayerToTile(playerTiles[0], currentEncounter.encounterCenter);
         Debug.Log("Preparing combat: " + currentEncounter.encounterName);
@@ -89,8 +100,8 @@ public class CombatManager : MonoBehaviour
 
     public void CombatPreparingReady()
     {
-        //Vector3 playerTile = currentEncounter.encounterCenter + currentEncounter.playerPositions[0];
-        //orbitCamera.SetCombatCameraPosition(playerTile, currentEncounter.encounterCenter + currentEncounter.enemyPositions[0]);
+        //Vector3 playerTile = currentEncounter.encounterCenter + currentEncounter.relativePlayerPositions[0];
+        //orbitCamera.SetCombatCameraPosition(playerTile, currentEncounter.encounterCenter + currentEncounter.relativeEnemyPositions[0]);
         gameState = GameState.InCombat;
         uiManager.SetUIState(gameState);
         Debug.Log("Started combat: " + currentEncounter.encounterName);

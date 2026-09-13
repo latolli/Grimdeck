@@ -10,15 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5521910be7ba42446ba4bfd2a5d6d04a, type: 3}
-  m_Name: Goblin_1
+  m_Name: Goblin_2
   m_EditorClassIdentifier: 
-  encounterName: Goblin 1
-  encounterDescription: One slimy goblin
+  encounterName: Test encouter v2
+  encounterDescription: asd
   enemyIds:
-  - enemy_1
-  - enemy_2
-  - enemy_3
-  encounterCenter: {x: 5.5, y: 0, z: -8.5}
+  - goblin_2
+  encounterCenter: {x: 0.5, y: 0, z: -10.5}
   relativeEnemyPositions: []
   relativePlayerPositions:
-  - {x: -2, y: 0, z: 0}
+  - {x: 0, y: 0, z: 2}
