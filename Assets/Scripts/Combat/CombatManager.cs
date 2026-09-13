@@ -16,6 +16,7 @@ public class CombatManager : MonoBehaviour
     public CombatCatalog combatCatalog;
     private CombatEncounter currentEncounter;
     private PlayerMovement playerMovement;
+    private CombatActions combatActions;
     private OrbitCamera orbitCamera;
     public int numPlayers = 1;  // Hardcoded for now, can be set dynamically later
 
@@ -26,6 +27,8 @@ public class CombatManager : MonoBehaviour
         uiManager = UIManager.Instance;
         orbitCamera = FindFirstObjectByType<OrbitCamera>();
         playerMovement = FindFirstObjectByType<PlayerMovement>();
+        combatActions = FindFirstObjectByType<CombatActions>();
+        combatActions.enabled = false;      // Combat actions will be enabled when entering combat
     }
 
     // Change game and camera state to combat mode
@@ -100,18 +103,22 @@ public class CombatManager : MonoBehaviour
 
     public void CombatPreparingReady()
     {
-        //Vector3 playerTile = currentEncounter.encounterCenter + currentEncounter.relativePlayerPositions[0];
-        //orbitCamera.SetCombatCameraPosition(playerTile, currentEncounter.encounterCenter + currentEncounter.relativeEnemyPositions[0]);
+        // Update states and enable / disable needed components
         gameState = GameState.InCombat;
         uiManager.SetUIState(gameState);
+        playerMovement.enabled = false;
+        combatActions.enabled = true;
         Debug.Log("Started combat: " + currentEncounter.encounterName);
     }
 
     // Change game and camera state back to free mode
     public void EndCombat()
     {
+        // Update states and enable / disable needed components
         gameState = GameState.Free;
         uiManager.SetUIState(gameState);
+        playerMovement.enabled = true;
+        combatActions.enabled = false;
         if (currentEncounter != null)
         {
             Debug.Log("Ended combat: " + currentEncounter.encounterName);

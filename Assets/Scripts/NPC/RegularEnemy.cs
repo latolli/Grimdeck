@@ -39,7 +39,7 @@ public class RegularEnemy : MonoBehaviour, IClickable
             }
             else
             {
-                Debug.LogError("CombatEncounter not assigned for " + gameObject.name);
+                Debug.Log("CombatEncounter not assigned for " + gameObject.name);
             }
         }
         else

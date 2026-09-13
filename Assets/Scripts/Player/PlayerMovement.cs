@@ -28,19 +28,42 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        HandleInput();
+        if (combatManager.gameState == GameState.Free)
+        {
+            HandleInput();
+        }
         CheckArrival();
     }
 
     void HandleInput()
     {
-        if (combatManager.gameState == GameState.InCombat)
+        if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            HandleCombatInput();
-        }
-        else if (combatManager.gameState == GameState.Free)
-        {
-            HandleFreeWroldInput();
+            Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (Physics.Raycast(ray, out RaycastHit hit, 100f, clickableLayer))
+            {
+                // Any new click cancels whatever was pending before
+                pendingInteraction = null;
+
+                if (hit.collider.TryGetComponent<IClickable>(out var clickable))
+                {
+                    // Move toward the target, remember what to do on arrival
+                    Vector3 closestTile = 
+                        FindClosestReachableTile(
+                            transform.position,
+                            clickable.InteractionTarget.position,
+                            clickable.InteractionRange);
+                    agent.SetDestination(closestTile);
+                    targetTile = grid.WorldToGrid(closestTile);
+                    pendingInteraction = clickable;
+                }
+                else
+                {
+                    // Plain floor click — just move
+                    Vector3 snapped = grid.SnapToTileCenter(hit.point);
+                    agent.SetDestination(snapped);
+                }
+            }
         }
     }
 
@@ -122,50 +145,6 @@ public class PlayerMovement : MonoBehaviour
         {
             // In combat, we don't handle arrival for now
             return;
-        }
-    }
-
-    void HandleCombatInput()
-    {
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            combatManager.EndCombat();
-        }
-        if (Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            Debug.Log("Combat mode: left click detected. Implement combat actions here.");
-        }
-    }
-
-    void HandleFreeWroldInput()
-    {
-        if (Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (Physics.Raycast(ray, out RaycastHit hit, 100f, clickableLayer))
-            {
-                // Any new click cancels whatever was pending before
-                pendingInteraction = null;
-
-                if (hit.collider.TryGetComponent<IClickable>(out var clickable))
-                {
-                    // Move toward the target, remember what to do on arrival
-                    Vector3 closestTile = 
-                        FindClosestReachableTile(
-                            transform.position,
-                            clickable.InteractionTarget.position,
-                            clickable.InteractionRange);
-                    agent.SetDestination(closestTile);
-                    targetTile = grid.WorldToGrid(closestTile);
-                    pendingInteraction = clickable;
-                }
-                else
-                {
-                    // Plain floor click — just move
-                    Vector3 snapped = grid.SnapToTileCenter(hit.point);
-                    agent.SetDestination(snapped);
-                }
-            }
         }
     }
 
