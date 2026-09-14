@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class CardHand : MonoBehaviour
+public class HandManager : MonoBehaviour
 {
     [SerializeField] private HandCard[] slots = new HandCard[10];
     [SerializeField, Range(0, 10)] private int startingCardCount;
@@ -19,7 +19,7 @@ public class CardHand : MonoBehaviour
     {
         if (slots == null || slots.Length == 0)
         {
-            Debug.LogError("CardHand needs at least one HandCard slot.", this);
+            Debug.LogError("HandManager needs at least one HandCard slot.", this);
             return;
         }
 
@@ -27,7 +27,7 @@ public class CardHand : MonoBehaviour
         {
             if (slots[i] == null)
             {
-                Debug.LogError($"CardHand slot {i} is not assigned.", this);
+                Debug.LogError($"HandManager slot {i} is not assigned.", this);
                 continue;
             }
 

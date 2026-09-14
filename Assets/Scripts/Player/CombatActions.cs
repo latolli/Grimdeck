@@ -24,9 +24,29 @@ public class CombatActions : MonoBehaviour
         {
             combatManager.EndCombat();
         }
-        //if (Mouse.current.leftButton.wasPressedThisFrame)
-        //{
-        //    Debug.Log("Combat mode: left click detected. Implement combat actions here.");
-        //}
+    }
+
+    public void CheckCardTarget(Vector2 screenPosition)
+    {
+        Ray ray = Camera.main.ScreenPointToRay(screenPosition);
+
+        if (!Physics.Raycast(ray, out RaycastHit hit, 100f, clickableLayer))
+        {
+            Debug.Log("Card target raycast missed.");
+            return;
+        }
+
+        Debug.Log($"Card played to: {hit.point}, collider: {hit.collider.name}");
+
+        IClickable clickable = hit.collider.GetComponentInParent<IClickable>();
+        if (clickable == null)
+        {
+            Debug.LogWarning(
+                $"Hit {hit.collider.name}, but it does not have an IClickable component.",
+                hit.collider);
+            return;
+        }
+
+        Debug.Log($"NPC / enemy hit: {hit.collider.name}");
     }
 }

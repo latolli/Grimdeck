@@ -12,10 +12,10 @@ public class CardPlayArea : MonoBehaviour, IDropHandler
         if (card == null)
             return;
 
-        CardHand hand = card.Owner;
+        HandManager hand = card.Owner;
         if (hand == null)
         {
-            Debug.LogWarning($"Card {card.name} is not inside a CardHand.", card);
+            Debug.LogWarning($"Card {card.name} is not inside a HandManager.", card);
             return;
         }
 
