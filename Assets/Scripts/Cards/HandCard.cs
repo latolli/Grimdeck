@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 [RequireComponent(typeof(CanvasGroup))]
 public class HandCard : MonoBehaviour,
-    IPointerClickHandler,
     IBeginDragHandler,
     IDragHandler,
     IEndDragHandler
@@ -13,8 +12,6 @@ public class HandCard : MonoBehaviour,
     public UnityEvent<GameObject> onClicked;
     public UnityEvent<GameObject> onCardDropped;
     private Canvas rootCanvas;
-    private bool wasDragged;
-    private bool wasPlayed;
     private HandManager owner;
     private RectTransform canvasRect;
     private Image arrowShaft;
@@ -33,21 +30,8 @@ public class HandCard : MonoBehaviour,
         owner = HandManager;
     }
 
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        //if (wasDragged)
-        //{
-        //    wasDragged = false;
-        //    return;
-        //}
-
-        //onClicked?.Invoke(gameObject);
-    }
-
     public void OnBeginDrag(PointerEventData eventData)
     {
-        wasDragged = true;
-        wasPlayed = false;
         rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
 
         if (rootCanvas != null)
@@ -75,14 +59,8 @@ public class HandCard : MonoBehaviour,
             canvasGroup.blocksRaycasts = true;
 
         SetArrowVisible(false);
-        CombatActions combatActions = FindFirstObjectByType<CombatActions>();
-        combatActions.CheckCardTarget(eventData.position);
-        //onCardDropped?.Invoke(gameObject);
-    }
-
-    public void MarkPlayed()
-    {
-        wasPlayed = true;
+        PlayerCombatHandler PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
+        PlayerCombatHandler.CheckCardTarget(eventData.position);
     }
 
     private void CreateDragArrow()

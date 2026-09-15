@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
-public class CombatActions : MonoBehaviour
+public class PlayerCombatHandler : MonoBehaviour
 {
     public LayerMask clickableLayer;
     private CombatManager combatManager;
@@ -36,17 +36,13 @@ public class CombatActions : MonoBehaviour
             return;
         }
 
-        Debug.Log($"Card played to: {hit.point}, collider: {hit.collider.name}");
-
-        IClickable clickable = hit.collider.GetComponentInParent<IClickable>();
-        if (clickable == null)
+        IEnemy enemy = hit.collider.GetComponentInParent<IEnemy>();
+        if (enemy != null)
         {
-            Debug.LogWarning(
-                $"Hit {hit.collider.name}, but it does not have an IClickable component.",
-                hit.collider);
-            return;
+            // For now, always just attack
+            int damage = Random.Range(3, 5);
+            enemy.OnCardTarget(CombatActionType.Attack, CombatEffectType.None, damage);
         }
 
-        Debug.Log($"NPC / enemy hit: {hit.collider.name}");
     }
 }

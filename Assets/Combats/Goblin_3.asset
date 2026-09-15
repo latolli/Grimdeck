@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   encounterName: asdf
   encounterDescription: asdf
-  enemyIds: []
+  enemyIds:
+  - goblin_3
   encounterCenter: {x: 9.5, y: 0, z: 7.5}
   relativeEnemyPositions: []
   relativePlayerPositions:

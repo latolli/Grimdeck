@@ -16,7 +16,7 @@ public class CombatManager : MonoBehaviour
     public CombatCatalog combatCatalog;
     private CombatEncounter currentEncounter;
     private PlayerMovement playerMovement;
-    private CombatActions combatActions;
+    private PlayerCombatHandler PlayerCombatHandler;
     private OrbitCamera orbitCamera;
     public int numPlayers = 1;  // Hardcoded for now, can be set dynamically later
 
@@ -27,8 +27,8 @@ public class CombatManager : MonoBehaviour
         uiManager = UIManager.Instance;
         orbitCamera = FindFirstObjectByType<OrbitCamera>();
         playerMovement = FindFirstObjectByType<PlayerMovement>();
-        combatActions = FindFirstObjectByType<CombatActions>();
-        combatActions.enabled = false;      // Combat actions will be enabled when entering combat
+        PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
+        PlayerCombatHandler.enabled = false;      // Combat actions will be enabled when entering combat
     }
 
     // Change game and camera state to combat mode
@@ -107,8 +107,17 @@ public class CombatManager : MonoBehaviour
         gameState = GameState.InCombat;
         uiManager.SetUIState(gameState);
         playerMovement.enabled = false;
-        combatActions.enabled = true;
+        PlayerCombatHandler.enabled = true;
         Debug.Log("Started combat: " + currentEncounter.encounterName);
+
+        // Reset enemy states
+        if (NPCRegistry.Instance == null)
+        {
+            Debug.LogError("NPCRegistry not found in the scene.");
+            return;
+        }
+
+        ChangeEnemyStates(true, currentEncounter.enemyIds);
     }
 
     // Change game and camera state back to free mode
@@ -118,11 +127,41 @@ public class CombatManager : MonoBehaviour
         gameState = GameState.Free;
         uiManager.SetUIState(gameState);
         playerMovement.enabled = true;
-        combatActions.enabled = false;
+        PlayerCombatHandler.enabled = false;
+        ChangeEnemyStates(false, currentEncounter.enemyIds);
         if (currentEncounter != null)
         {
             Debug.Log("Ended combat: " + currentEncounter.encounterName);
         }
         currentEncounter = null;
+    }
+
+    void ChangeEnemyStates(bool start, string[] enemyList)
+    {
+        for (int i = 0; i < enemyList.Length; i++)
+        {
+            string id = enemyList[i];
+            if (!NPCRegistry.Instance.TryGetNPC(id, out NPCIdentity npc))
+            {
+                Debug.LogError($"Enemy with ID '{id}' was not found in the NPC registry.");
+                continue;
+            }
+
+            RegularEnemy enemy = npc.GetComponent<RegularEnemy>();
+            if (enemy == null)
+            {
+                Debug.LogError($"NPC with ID '{id}' is not a RegularEnemy.", npc);
+                continue;
+            }
+
+            if (start)
+            {
+                enemy.ResetCombatState();
+            }
+            else
+            {
+                enemy.NullifyCombatState();
+            }
+        }
     }
 }

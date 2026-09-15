@@ -33,7 +33,6 @@ public class HandManager : MonoBehaviour
 
             int slotIndex = i;
             slots[i].SetOwner(this);
-            slots[i].onClicked.AddListener(_ => PlayCard(slotIndex));
         }
 
         SetCardCount(startingCardCount);
@@ -84,37 +83,5 @@ public class HandManager : MonoBehaviour
         }
 
         Debug.LogWarning("Cannot add a card: cardAddOrder has no available valid slot.", this);
-    }
-
-    public void PlayCard(HandCard card)
-    {
-        if (card == null)
-            return;
-
-        for (int i = 0; i < slots.Length; i++)
-        {
-            if (slots[i] != card)
-                continue;
-
-            PlayCard(i);
-            return;
-        }
-
-        Debug.LogWarning($"Card {card.name} does not belong to this hand.", this);
-    }
-
-    public void PlayCard(int slotIndex)
-    {
-        if (slotIndex < 0 || slotIndex >= slots.Length)
-            return;
-
-        HandCard card = slots[slotIndex];
-        if (card == null || !card.gameObject.activeSelf)
-            return;
-
-        card.MarkPlayed();
-        card.gameObject.SetActive(false);
-        CardCount--;
-        onCardPlayed?.Invoke(card.gameObject);
     }
 }

@@ -11,6 +11,7 @@ public class PlayerMovement : MonoBehaviour
     private GridSystem grid;
     private CombatManager combatManager;
     private IClickable pendingInteraction;
+    private IEnemy pendingEnemyInteraction;
     private Vector2Int targetTile;
     private Vector3 pendingCombatCenter;
     private bool hasPendingCombatPreparation;
@@ -45,6 +46,7 @@ public class PlayerMovement : MonoBehaviour
                 // Any new click cancels whatever was pending before
                 pendingInteraction = null;
 
+                // NPCs and other interactable objects
                 if (hit.collider.TryGetComponent<IClickable>(out var clickable))
                 {
                     // Move toward the target, remember what to do on arrival
@@ -56,6 +58,19 @@ public class PlayerMovement : MonoBehaviour
                     agent.SetDestination(closestTile);
                     targetTile = grid.WorldToGrid(closestTile);
                     pendingInteraction = clickable;
+                }
+                // Enemies
+                else if (hit.collider.TryGetComponent<IEnemy>(out var enemy))
+                {
+                    // Move toward the target, remember what to do on arrival
+                    Vector3 closestTile = 
+                        FindClosestReachableTile(
+                            transform.position,
+                            enemy.InteractionTarget.position,
+                            enemy.InteractionRange);
+                    agent.SetDestination(closestTile);
+                    targetTile = grid.WorldToGrid(closestTile);
+                    pendingEnemyInteraction = enemy;
                 }
                 else
                 {
@@ -100,14 +115,22 @@ public class PlayerMovement : MonoBehaviour
         if (combatManager.gameState == GameState.Free)
         {
             agent.updateRotation = true;
-            if (pendingInteraction == null) return;
+            if (pendingInteraction == null && pendingEnemyInteraction == null) return;
             if (agent.pathPending) return; // path still calculating
 
             // Check if we arrived at the target tile
             if (agent.remainingDistance <= agent.stoppingDistance)
             {
-                pendingInteraction.OnInteract(); 
-                pendingInteraction = null;
+                if (pendingInteraction != null)
+                {
+                    pendingInteraction.OnInteract(); 
+                    pendingInteraction = null;
+                }
+                else if (pendingEnemyInteraction != null)
+                {
+                    pendingEnemyInteraction.OnInteract(); 
+                    pendingEnemyInteraction = null;
+                }
             }
         }
         // Combat preparation ongoing

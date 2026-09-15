@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(NPCIdentity))]
 public class RegularNPC : MonoBehaviour, IClickable

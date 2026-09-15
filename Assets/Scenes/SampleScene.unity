@@ -746,6 +746,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatEncounter: {fileID: 11400000, guid: d70fc52d174b9dd4a900a71fea6f67d9, type: 2}
+  maxHP: 10
 --- !u!208 &206292729
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -1850,6 +1851,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatEncounter: {fileID: 0}
+  maxHP: 6
 --- !u!208 &561974589
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -3257,6 +3259,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatEncounter: {fileID: 11400000, guid: 77af8fa57531a044c9d6b5163536387a, type: 2}
+  maxHP: 10
 --- !u!208 &1307973166
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -3412,6 +3415,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatEncounter: {fileID: 0}
+  maxHP: 7
 --- !u!208 &1381037698
 NavMeshObstacle:
   m_ObjectHideFlags: 0
@@ -3653,6 +3657,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   combatEncounter: {fileID: 11400000, guid: 5faecf11bc3d0fe49808fdb4215e7ed6, type: 2}
+  maxHP: 10
 --- !u!208 &1497919617
 NavMeshObstacle:
   m_ObjectHideFlags: 0
