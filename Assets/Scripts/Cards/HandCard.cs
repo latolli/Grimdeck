@@ -12,7 +12,6 @@ public class HandCard : MonoBehaviour,
     public UnityEvent<GameObject> onClicked;
     public UnityEvent<GameObject> onCardDropped;
     private Canvas rootCanvas;
-    private HandManager owner;
     private RectTransform canvasRect;
     private Image arrowShaft;
     private Image arrowHeadLeft;
@@ -23,11 +22,20 @@ public class HandCard : MonoBehaviour,
     [SerializeField] private float arrowHeadLength = 24f;
     [SerializeField] private float arrowHeadAngle = 30f;
 
-    public HandManager Owner => owner;
+    private CardManager owner;
+    private Card card;
 
-    public void SetOwner(HandManager HandManager)
+    public Card Card => card;
+    public CardManager Owner => owner;
+
+    public void SetOwner(CardManager cardManager)
     {
-        owner = HandManager;
+        owner = cardManager;
+    }
+
+    public void SetCard(Card cardData)
+    {
+        card = cardData;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -60,7 +68,7 @@ public class HandCard : MonoBehaviour,
 
         SetArrowVisible(false);
         PlayerCombatHandler PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
-        PlayerCombatHandler.CheckCardTarget(eventData.position);
+        PlayerCombatHandler.CheckCardTarget(this.card, eventData.position);
     }
 
     private void CreateDragArrow()

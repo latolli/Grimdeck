@@ -60,12 +60,12 @@ public class RegularEnemy : MonoBehaviour, IEnemy
     }
 
     // Function to handle when card is played against this enemy
-    public void OnCardTarget(CombatActionType action, CombatEffectType effect, int value)
+    public bool OnCardTarget(CombatActionType action, CombatEffectType effect, int value)
     {
+        bool cardWasPlayed = false;
         if (enemyState == null)
         {
             Debug.LogError($"Enemy with ID '{npcIdentity}' doesn't have valid state");
-            return;
         }
 
         // For now, just always do damage and have no other effects
@@ -83,11 +83,13 @@ public class RegularEnemy : MonoBehaviour, IEnemy
                 enemyState.isAlive = false;
                 Debug.Log($"Enemy ID '{npcIdentity}' is dead");
             }
+            cardWasPlayed = true;
         }
         else
         {
             Debug.Log($"Enemy ID '{npcIdentity}' is already dead");
         }
+        return cardWasPlayed;
     }
 
     public void ResetCombatState()

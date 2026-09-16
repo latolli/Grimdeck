@@ -17,6 +17,7 @@ public class CombatManager : MonoBehaviour
     private CombatEncounter currentEncounter;
     private PlayerMovement playerMovement;
     private PlayerCombatHandler PlayerCombatHandler;
+    private CardManager cardManager;
     private OrbitCamera orbitCamera;
     public int numPlayers = 1;  // Hardcoded for now, can be set dynamically later
 
@@ -28,6 +29,7 @@ public class CombatManager : MonoBehaviour
         orbitCamera = FindFirstObjectByType<OrbitCamera>();
         playerMovement = FindFirstObjectByType<PlayerMovement>();
         PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
+        cardManager = FindFirstObjectByType<CardManager>();
         PlayerCombatHandler.enabled = false;      // Combat actions will be enabled when entering combat
     }
 
@@ -118,6 +120,7 @@ public class CombatManager : MonoBehaviour
         }
 
         ChangeEnemyStates(true, currentEncounter.enemyIds);
+        cardManager.PrepareCardsForCombat();
     }
 
     // Change game and camera state back to free mode

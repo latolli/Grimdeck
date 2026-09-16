@@ -3,7 +3,10 @@ public enum CombatActionType
     Attack,
     Block,
     Heal,
-    ApplyDebuff
+    ApplyDebuff,
+    Draw,       // Only for player
+    Discard,    // Only for player
+    Destroy,    // Only for player
 }
 
 public enum CombatEffectType
@@ -17,7 +20,35 @@ public enum CombatEffectType
 // Class defining possible actions per one turn
 public class CombatAction
 {
-    CombatActionType[] actionType;          // E.g., [Attack, ApplyDebuff]
-    CombatEffectType[] combatEffectType;    // E.e., [None, Weaken]
-    int[] actionValue;                      // E.e., [7, 3] (Deal 7 damage with attack, weaken for 3 turns)
+    public CombatActionType[] ActionTypes { get; set; }
+    public CombatEffectType[] CombatEffectTypes { get; set; }
+    public int[] ActionValues { get; set; }
+
+    public CombatAction()
+        : this(
+            new CombatActionType[0],
+            new CombatEffectType[0],
+            new int[0])
+    {
+    }
+
+    public CombatAction(
+        CombatActionType[] actionTypes,
+        CombatEffectType[] combatEffectTypes,
+        int[] actionValues)
+    {
+        if (actionTypes == null ||
+            combatEffectTypes == null ||
+            actionValues == null ||
+            actionTypes.Length != combatEffectTypes.Length ||
+            actionTypes.Length != actionValues.Length)
+        {
+            throw new System.ArgumentException(
+                "Combat action types, effects, and values must have the same length.");
+        }
+
+        ActionTypes = actionTypes;
+        CombatEffectTypes = combatEffectTypes;
+        ActionValues = actionValues;
+    }
 }

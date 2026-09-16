@@ -7,10 +7,12 @@ public class PlayerCombatHandler : MonoBehaviour
 {
     public LayerMask clickableLayer;
     private CombatManager combatManager;
+    private CardManager cardManager;
 
     void Start()
     {
         combatManager = CombatManager.Instance;
+        cardManager = FindFirstObjectByType<CardManager>();;
     }
 
     void Update()
@@ -26,7 +28,7 @@ public class PlayerCombatHandler : MonoBehaviour
         }
     }
 
-    public void CheckCardTarget(Vector2 screenPosition)
+    public void CheckCardTarget(Card card, Vector2 screenPosition)
     {
         Ray ray = Camera.main.ScreenPointToRay(screenPosition);
 
@@ -41,7 +43,12 @@ public class PlayerCombatHandler : MonoBehaviour
         {
             // For now, always just attack
             int damage = Random.Range(3, 5);
-            enemy.OnCardTarget(CombatActionType.Attack, CombatEffectType.None, damage);
+            bool cardPlayed = enemy.OnCardTarget(CombatActionType.Attack, CombatEffectType.None, damage);
+            // Callback that this card was played
+            if (cardPlayed)
+            {
+                cardManager.PlayCard(card);
+            }
         }
 
     }
