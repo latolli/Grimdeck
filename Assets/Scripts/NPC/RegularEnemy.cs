@@ -79,9 +79,10 @@ public class RegularEnemy : MonoBehaviour, IEnemy
             Debug.Log($"Enemy ID '{npcIdentity}' took {value} damage: HP = {enemyState.currentHP}");
             if (enemyState.currentHP <= 0)
             {
+                CombatManager combatManager = FindFirstObjectByType<CombatManager>();
                 enemyState.currentHP = 0;
                 enemyState.isAlive = false;
-                Debug.Log($"Enemy ID '{npcIdentity}' is dead");
+                combatManager.EnemyKilledCB(npcIdentity.Id);
             }
             cardWasPlayed = true;
         }
@@ -92,7 +93,15 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         return cardWasPlayed;
     }
 
-    public void ResetCombatState()
+    public void PlayEnemyTurn()
+    {
+        if (enemyState.isAlive)
+        {
+            Debug.Log($"Enemy {npcIdentity} played its turn and did absolutely nothing :O");
+        }
+    }
+
+    public void ResetEnemyCombatState()
     {
         if (enemyState == null)
         {
@@ -110,9 +119,6 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         {
             enemyState.actionPattern[i] = new CombatAction();
         }
-
-        Debug.Log($"Enemy ID '{npcIdentity}' ready for battle: HP = {enemyState.currentHP}");
-        Debug.Log($"Attack pattern: {enemyState.actionPattern}");
     }
 
     public void NullifyCombatState()

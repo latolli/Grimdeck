@@ -161,7 +161,7 @@ public class PlayerMovement : MonoBehaviour
                 }
                 pendingCombatCenter = Vector3.zero;
                 hasPendingCombatPreparation = false;
-                combatManager.CombatPreparingReady();
+                combatManager.CombatPreparingReadyCB();
             }
         }
         else

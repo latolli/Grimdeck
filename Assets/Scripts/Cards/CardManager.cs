@@ -42,33 +42,7 @@ public class CardManager : MonoBehaviour
             slots[i].gameObject.SetActive(false);
             slots[i].SetOwner(this);
         }
-
-        //SetCardCount(startingCardCount);
     }
-
-    //public void SetCardCount(int count)
-    //{
-    //    CardCount = Mathf.Clamp(count, 0, slots.Length);
-//
-    //    for (int i = 0; i < slots.Length; i++)
-    //    {
-    //        if (slots[i] != null)
-    //            slots[i].gameObject.SetActive(false);
-    //    }
-//
-    //    int cardsToActivate = CardCount;
-    //    foreach (int slotNumber in cardAddOrder)
-    //    {
-    //        int slotIndex = slotNumber - 1;
-    //        if (slotIndex < 0 || slotIndex >= slots.Length || slots[slotIndex] == null)
-    //            continue;
-//
-    //        slots[slotIndex].gameObject.SetActive(true);
-    //        cardsToActivate--;
-    //        if (cardsToActivate == 0)
-    //            break;
-    //    }
-    //}
 
     public void DrawCard()
     {
@@ -142,6 +116,18 @@ public class CardManager : MonoBehaviour
         Debug.LogError($"Couldn't find {playedCard.Title} from player's hand.");
     }
 
+    public void StartTurnActions()
+    {
+        // Draw cards
+        for (int i = 0; i < 4; i++)
+        {
+            DrawCard();
+        }
+
+        // Any effects??
+        // Decrease statuses etc.
+    }
+
     public void PrepareCardsForCombat()
     {
         // Set all card slots as not active
@@ -154,12 +140,6 @@ public class CardManager : MonoBehaviour
         // Init and shuffle draw pile
         InitializeDrawPile();
         Shuffle(drawPile);
-
-        // Draw 4
-        for (int i = 0; i < 4; i++)
-        {
-            DrawCard();
-        }
     }
 
     // TODO: For now, initialize drawPile with the starter deck.

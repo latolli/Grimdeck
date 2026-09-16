@@ -8,10 +8,26 @@ public enum GameState
     PreparingCombat
 }
 
+public enum CombatState
+{
+    None,
+    PlayerTurn,
+    EnemyTurn,
+    EndScreen
+}
+
+public enum CombatResult
+{
+    Victory,
+    Defeat,
+    Escape
+}
+
 public class CombatManager : MonoBehaviour
 {
     public static CombatManager Instance;
     public GameState gameState = GameState.Free;
+    public CombatState combatState = CombatState.None;
     UIManager uiManager;
     public CombatCatalog combatCatalog;
     private CombatEncounter currentEncounter;
@@ -19,6 +35,7 @@ public class CombatManager : MonoBehaviour
     private PlayerCombatHandler PlayerCombatHandler;
     private CardManager cardManager;
     private OrbitCamera orbitCamera;
+    private List<string> aliveEnemies;
     public int numPlayers = 1;  // Hardcoded for now, can be set dynamically later
 
     void Awake() => Instance = this;
@@ -81,7 +98,6 @@ public class CombatManager : MonoBehaviour
                 newPlayerPos -= offsetVector;
             }
             defaultPositions[i] = newPlayerPos;
-            Debug.Log("Combat position:" + i + newPlayerPos);
         }
 
         for (int i = 0; i < numPlayers; i++)
@@ -101,42 +117,6 @@ public class CombatManager : MonoBehaviour
         // Move players
         playerMovement.MovePlayerToTile(playerTiles[0], currentEncounter.encounterCenter);
         Debug.Log("Preparing combat: " + currentEncounter.encounterName);
-    }
-
-    public void CombatPreparingReady()
-    {
-        // Update states and enable / disable needed components
-        gameState = GameState.InCombat;
-        uiManager.SetUIState(gameState);
-        playerMovement.enabled = false;
-        PlayerCombatHandler.enabled = true;
-        Debug.Log("Started combat: " + currentEncounter.encounterName);
-
-        // Reset enemy states
-        if (NPCRegistry.Instance == null)
-        {
-            Debug.LogError("NPCRegistry not found in the scene.");
-            return;
-        }
-
-        ChangeEnemyStates(true, currentEncounter.enemyIds);
-        cardManager.PrepareCardsForCombat();
-    }
-
-    // Change game and camera state back to free mode
-    public void EndCombat()
-    {
-        // Update states and enable / disable needed components
-        gameState = GameState.Free;
-        uiManager.SetUIState(gameState);
-        playerMovement.enabled = true;
-        PlayerCombatHandler.enabled = false;
-        ChangeEnemyStates(false, currentEncounter.enemyIds);
-        if (currentEncounter != null)
-        {
-            Debug.Log("Ended combat: " + currentEncounter.encounterName);
-        }
-        currentEncounter = null;
     }
 
     void ChangeEnemyStates(bool start, string[] enemyList)
@@ -159,12 +139,108 @@ public class CombatManager : MonoBehaviour
 
             if (start)
             {
-                enemy.ResetCombatState();
+                enemy.ResetEnemyCombatState();
             }
             else
             {
                 enemy.NullifyCombatState();
             }
+        }
+
+        // Initialize list of currently alive enemies
+        if (start)
+        {
+            aliveEnemies = new List<string>(enemyList);
+        }
+    }
+
+    // Callbacks
+    public void CombatPreparingReadyCB()
+    {
+        // Update states and enable / disable needed components
+        gameState = GameState.InCombat;
+        uiManager.SetUIState(gameState);
+        playerMovement.enabled = false;
+        PlayerCombatHandler.enabled = true;
+        Debug.Log("Started combat: " + currentEncounter.encounterName);
+
+        // Reset enemy states
+        if (NPCRegistry.Instance == null)
+        {
+            Debug.LogError("NPCRegistry not found in the scene.");
+            return;
+        }
+
+        // Prepare enemy states and cards
+        ChangeEnemyStates(true, currentEncounter.enemyIds);
+        cardManager.PrepareCardsForCombat();
+
+        // Start first player turn
+        StartPlayerTurn();
+    }
+
+    public void StartPlayerTurn()
+    {
+        // Start player turn
+        combatState = CombatState.PlayerTurn;
+        cardManager.StartTurnActions();
+    }
+
+    public void EndPlayerTurnCB()
+    {
+        // Ends player turn
+        combatState = CombatState.EnemyTurn;
+
+        // Play enemy turns
+        for (int i = 0; i < currentEncounter.enemyIds.Length; i++)
+        {
+            string id = currentEncounter.enemyIds[i];
+            NPCRegistry.Instance.TryGetNPC(id, out NPCIdentity npc);
+            RegularEnemy enemy = npc.GetComponent<RegularEnemy>();
+            enemy.PlayEnemyTurn();
+        }
+
+        // Start player turn again
+        StartPlayerTurn();
+    }
+
+    // Change game and camera state back to free mode
+    public void EndCombatCB(CombatResult result)
+    {
+        // Check combat result
+        if (result == CombatResult.Victory)
+        {
+            Debug.Log("Player won!!");
+        }
+        else if (result == CombatResult.Defeat)
+        {
+            Debug.Log("Player lost!!");
+        }
+        else
+        {
+            Debug.Log("Player was noob and run away...");
+        }
+        // Update states and enable / disable needed components
+        combatState = CombatState.None;
+        gameState = GameState.Free;
+        uiManager.SetUIState(gameState);
+        playerMovement.enabled = true;
+        PlayerCombatHandler.enabled = false;
+        ChangeEnemyStates(false, currentEncounter.enemyIds);
+        if (currentEncounter != null)
+        {
+            Debug.Log("Ended combat: " + currentEncounter.encounterName);
+        }
+        currentEncounter = null;
+    }
+
+    public void EnemyKilledCB(string npcId)
+    {
+        aliveEnemies.Remove(npcId);
+        Debug.Log($"Enemy '{npcId}' defeated. {aliveEnemies.Count} enemies remaining.", this);
+        if (aliveEnemies.Count == 0)
+        {
+            EndCombatCB(CombatResult.Victory);
         }
     }
 }

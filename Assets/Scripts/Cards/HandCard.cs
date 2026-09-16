@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using TMPro;
 
 [RequireComponent(typeof(CanvasGroup))]
 public class HandCard : MonoBehaviour,
@@ -9,8 +10,6 @@ public class HandCard : MonoBehaviour,
     IDragHandler,
     IEndDragHandler
 {
-    public UnityEvent<GameObject> onClicked;
-    public UnityEvent<GameObject> onCardDropped;
     private Canvas rootCanvas;
     private RectTransform canvasRect;
     private Image arrowShaft;
@@ -24,6 +23,7 @@ public class HandCard : MonoBehaviour,
 
     private CardManager owner;
     private Card card;
+    private GameObject renderedCard;
 
     public Card Card => card;
     public CardManager Owner => owner;
@@ -36,6 +36,7 @@ public class HandCard : MonoBehaviour,
     public void SetCard(Card cardData)
     {
         card = cardData;
+        RenderCard(cardData);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -51,6 +52,7 @@ public class HandCard : MonoBehaviour,
                 canvasGroup.blocksRaycasts = false;
 
             CreateDragArrow();
+            SetArrowAsLastSibling();
             UpdateDragArrow(eventData);
         }
     }
@@ -69,6 +71,113 @@ public class HandCard : MonoBehaviour,
         SetArrowVisible(false);
         PlayerCombatHandler PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
         PlayerCombatHandler.CheckCardTarget(this.card, eventData.position);
+    }
+
+    private void RenderCard(Card card)
+    {
+        if (renderedCard != null)
+        {
+            Destroy(renderedCard);
+            renderedCard = null;
+        }
+
+        if (card == null)
+            return;
+
+        // Check if card is attack or defend type
+        string templateName = "attack_template";
+        if (card.Action != null &&
+            card.Action.ActionTypes != null &&
+            card.Action.ActionTypes.Length > 0 &&
+            card.Action.ActionTypes[0] == CombatActionType.Block)
+        {
+            templateName = "defend_template";
+        }
+
+        // Load the image as Sprite
+        Sprite templateSprite = Resources.Load<Sprite>(templateName);
+        if (templateSprite == null)
+        {
+            Debug.LogError($"Couldn't load card template '{templateName}' from Resources.", this);
+            return;
+        }
+
+        // Create new game object
+        renderedCard = new GameObject(card.Title, typeof(RectTransform));
+        renderedCard.transform.SetParent(transform, false);
+        renderedCard.transform.SetAsFirstSibling();
+
+        RectTransform cardRect = renderedCard.GetComponent<RectTransform>();
+        cardRect.anchorMin = Vector2.zero;
+        cardRect.anchorMax = Vector2.one;
+        cardRect.offsetMin = Vector2.zero;
+        cardRect.offsetMax = Vector2.zero;
+
+        // Add the image to the gameobject
+        Image cardTemplate = renderedCard.AddComponent<Image>();
+        cardTemplate.sprite = templateSprite;
+        cardTemplate.type = Image.Type.Simple;
+        cardTemplate.preserveAspect = false;
+        cardTemplate.raycastTarget = false;
+
+        CreateCardText(
+            "Title",
+            card.Title,
+            cardRect,
+            12,
+            new Vector2(0f, 0.8f),
+            new Vector2(1f, 1f));
+
+        CreateCardText(
+            "Description",
+            card.Description,
+            cardRect,
+            11,
+            new Vector2(0.1f, 0.1f),
+            new Vector2(0.9f, 0.5f));
+    }
+
+    private static void CreateCardText(
+    string objectName,
+    string text,
+    RectTransform parent,
+    int fontSize,
+    Vector2 anchorMin,
+    Vector2 anchorMax)
+    {
+        GameObject textObject = new GameObject(
+            objectName,
+            typeof(RectTransform),
+            typeof(TextMeshProUGUI));
+
+        textObject.transform.SetParent(parent, false);
+
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.anchorMin = anchorMin;
+        textRect.anchorMax = anchorMax;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        TextMeshProUGUI cardText = textObject.GetComponent<TextMeshProUGUI>();
+        cardText.text = text ?? string.Empty;
+        cardText.fontSize = fontSize;
+        cardText.alignment = TextAlignmentOptions.Center;
+        cardText.color = Color.black;
+        cardText.raycastTarget = false;
+        cardText.textWrappingMode = TextWrappingModes.Normal;
+        cardText.overflowMode = TextOverflowModes.Truncate;
+
+        TMP_FontAsset font = Resources.Load<TMP_FontAsset>("Roboto_Customfont SDF");
+        if (font == null)
+        {
+            Debug.LogError(
+                "Couldn't load TMP font asset 'Roboto_Customfont SDF' from Resources.",
+                parent);
+            return;
+        }
+
+        cardText.font = font;
+        textObject.transform.SetAsLastSibling();
     }
 
     private void CreateDragArrow()
@@ -92,7 +201,7 @@ public class HandCard : MonoBehaviour,
     {
         GameObject part = new GameObject(partName, typeof(RectTransform), typeof(Image));
         part.transform.SetParent(canvasRect, false);
-        part.transform.SetAsFirstSibling();
+        part.transform.SetAsLastSibling();
 
         Image image = part.GetComponent<Image>();
         image.sprite = arrowSprite;
@@ -173,5 +282,15 @@ public class HandCard : MonoBehaviour,
             arrowHeadLeft.gameObject.SetActive(visible);
         if (arrowHeadRight != null)
             arrowHeadRight.gameObject.SetActive(visible);
+    }
+
+    private void SetArrowAsLastSibling()
+    {
+        if (arrowShaft != null)
+            arrowShaft.transform.SetAsLastSibling();
+        if (arrowHeadLeft != null)
+            arrowHeadLeft.transform.SetAsLastSibling();
+        if (arrowHeadRight != null)
+            arrowHeadRight.transform.SetAsLastSibling();
     }
 }

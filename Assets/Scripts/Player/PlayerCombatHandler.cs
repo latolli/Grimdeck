@@ -22,28 +22,39 @@ public class PlayerCombatHandler : MonoBehaviour
 
     void HandleInput()
     {
+        // Esc ends combat in any state
         if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
-            combatManager.EndCombat();
+            combatManager.EndCombatCB(CombatResult.Escape);
+        }
+        // Check other actions allowed only in player's turn
+        else if (combatManager.combatState == CombatState.PlayerTurn)
+        {
+            if (Keyboard.current.enterKey.wasPressedThisFrame)
+            {
+                combatManager.EndPlayerTurnCB();
+            }    
         }
     }
 
-    public void CheckCardTarget(Card card, Vector2 screenPosition)
+    public bool CheckCardTarget(Card card, Vector2 screenPosition)
     {
+        bool cardPlayed = false;
         Ray ray = Camera.main.ScreenPointToRay(screenPosition);
 
         if (!Physics.Raycast(ray, out RaycastHit hit, 100f, clickableLayer))
         {
-            Debug.Log("Card target raycast missed.");
-            return;
+            return false;
         }
 
         IEnemy enemy = hit.collider.GetComponentInParent<IEnemy>();
         if (enemy != null)
         {
-            // For now, always just attack
+            // TODO: Next, add real card effects:
+            // Attacking enemy, gaining block to player
+            // Draw, discard, destroy mechanisms
             int damage = Random.Range(3, 5);
-            bool cardPlayed = enemy.OnCardTarget(CombatActionType.Attack, CombatEffectType.None, damage);
+            cardPlayed = enemy.OnCardTarget(CombatActionType.Attack, CombatEffectType.None, damage);
             // Callback that this card was played
             if (cardPlayed)
             {
@@ -51,5 +62,6 @@ public class PlayerCombatHandler : MonoBehaviour
             }
         }
 
+        return cardPlayed;
     }
 }
