@@ -5,8 +5,8 @@ using UnityEngine.Events;
 
 public class CardManager : MonoBehaviour
 {
-    [SerializeField] private HandCard[] slots = new HandCard[10];
-    [SerializeField, Range(0, 10)] private int startingCardCount;
+    [SerializeField] private HandCard[] slots = new HandCard[6];
+    [SerializeField, Range(0, 6)] private int startingCardCount;
     [SerializeField] private List<int> cardAddOrder = new List<int>
     {
         5, 6, 4, 7, 3, 8, 2, 9, 1, 10
@@ -14,10 +14,11 @@ public class CardManager : MonoBehaviour
     [SerializeField] private UnityEvent<GameObject> onCardPlayed;
 
     // Init lists for keeping track of cards
-    private Card[] drawPile;
-    private Card[] discardPile;
+    //private Card[] drawPile;
+    private List<Card> drawPile;
+    private List<Card> discardPile;
     private Card[] handCards = new Card[6];     // Indexing of handCards should follow UI handcard slots
-    private Card[] destroyedPile;
+    private List<Card> destroyedPile;
     private int cardsInHand;
 
     public int CardCount { get; private set; }
@@ -59,22 +60,25 @@ public class CardManager : MonoBehaviour
                 slots[slotIndex] == null || slots[slotIndex].gameObject.activeSelf)
                 continue;
 
-            // Take and remove the last card from the draw pile.
-            if (drawPile == null || drawPile.Length == 0)
+            // Check if resuffle is needed
+            if (drawPile.Count == 0)
             {
-                slots[slotIndex].gameObject.SetActive(false);
-                Debug.LogWarning("Cannot draw a card: the draw pile is empty.", this);
-                return;
+                drawPile = discardPile;
+                discardPile = new List<Card>();
+                Shuffle(drawPile);
             }
 
-            int lastCardIndex = drawPile.Length - 1;
-            Card lastCard = drawPile[lastCardIndex];
-            Array.Resize(ref drawPile, lastCardIndex);
-            AssignCardToSlot(slotIndex, lastCard);
-            return;
+            if (drawPile.Count > 0)
+            {
+                int lastCardIndex = drawPile.Count - 1;
+                Card lastCard = drawPile[lastCardIndex];
+                drawPile.RemoveAt(lastCardIndex);
+                AssignCardToSlot(slotIndex, lastCard);
+                return;
+            }
         }
 
-        Debug.LogWarning("Cannot add a card: cardAddOrder has no available valid slot.", this);
+        Debug.LogWarning("No more cards or suitable slots.", this);
     }
 
     // Add card to handCard list and UI slot
@@ -110,14 +114,39 @@ public class CardManager : MonoBehaviour
                 slots[i].gameObject.SetActive(false);
                 handCards[i] = null;
                 cardsInHand--;
-                return;
+                discardPile.Add(playedCard);
+                break;
             }
         }
-        Debug.LogError($"Couldn't find {playedCard.Title} from player's hand.");
+
+        // Play deck related card effects
+        CombatAction action = playedCard.Action;
+        for (int i = 0; i < action.ActionTypes.Length; i++)
+        {
+            CombatActionType actionType = action.ActionTypes[i];
+            if (actionType == CombatActionType.Draw)
+            {
+                for (int draw = 0; draw < action.ActionValues[i]; draw++)
+                {
+                    DrawCard();  
+                }
+            }
+            else if (actionType == CombatActionType.Discard)
+            {
+                // TODO:
+                Debug.Log("Discarding card...");
+            }
+            else if (actionType == CombatActionType.Destroy)
+            {
+                // TODO:
+                Debug.Log("Destroying card...");
+            }
+        }
     }
 
     public void StartTurnActions()
     {
+        // TODO: Something very weird happening and handslots decrease after first combat????
         // Draw cards
         for (int i = 0; i < 4; i++)
         {
@@ -128,61 +157,105 @@ public class CardManager : MonoBehaviour
         // Decrease statuses etc.
     }
 
-    public void PrepareCardsForCombat()
+    public void PrepareCardsForCombat(bool start)
     {
         // Set all card slots as not active
         for (int i = 0; i < slots.Length; i++)
         {
             if (slots[i] != null)
+            {
                 slots[i].gameObject.SetActive(false);
+                handCards[i] = null;
+            }
         }
 
-        // Init and shuffle draw pile
-        InitializeDrawPile();
-        Shuffle(drawPile);
+        if (start == true)
+        {
+            // Init and shuffle draw pile
+            InitializeCardPiles();
+            Shuffle(drawPile);
+        }
     }
 
-    // TODO: For now, initialize drawPile with the starter deck.
-    // In later stage, this combat deck should be chosen by player from their current card collection
-    private void InitializeDrawPile()
+    public void DiscardCards(int discardAmount)
     {
-        drawPile = new[]
+        // Check if this is discard all situation
+        if (discardAmount >= cardsInHand)
         {
-            CreateAttackCard(),
-            CreateAttackCard(),
-            CreateAttackCard(),
-            CreateBlockCard(),
-            CreateBlockCard(),
-            CreateBlockCard(),
-            new Card(
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (handCards[i] != null)
+                {
+                    // Remove card from slot
+                    discardPile.Add(handCards[i]);
+                    slots[i].gameObject.SetActive(false);
+                    handCards[i] = null;
+                    cardsInHand--;
+                }
+            }
+        }
+        // If not, let player choose
+        // TODO:
+    }
+
+    private void InitializeCardPiles()
+    {
+        // Init piles to empty lists
+        drawPile = new List<Card>();
+        discardPile = new List<Card>();
+        destroyedPile = new List<Card>();
+
+        // Make dummy deck for now
+        for (int i = 0; i < 3; i++)
+        {
+            drawPile.Add(CreateAttackCard());
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            drawPile.Add(CreateBlockCard());
+        }
+        drawPile.Add(new Card(
                 "Quick Discard",
                 "Draw 2 cards, then discard 1 card.",
                 CreateAction(
                     new[] { CombatActionType.Draw, CombatActionType.Discard },
                     new[] { CombatEffectType.None, CombatEffectType.None },
-                    new[] { 2, 1 })),
-            new Card(
+                    new[] { 2, 1 })));
+        drawPile.Add(new Card(
                 "Quick Destroy",
                 "Draw 2 cards, then destroy 1 card.",
                 CreateAction(
                     new[] { CombatActionType.Draw, CombatActionType.Destroy },
                     new[] { CombatEffectType.None, CombatEffectType.None },
-                    new[] { 2, 1 })),
-            new Card(
+                    new[] { 2, 1 })));
+        drawPile.Add(new Card(
                 "Renew",
                 "Draw 1 card and heal for 2.",
                 CreateAction(
                     new[] { CombatActionType.Draw, CombatActionType.Heal },
                     new[] { CombatEffectType.None, CombatEffectType.None },
-                    new[] { 1, 2 })),
-            new Card(
+                    new[] { 1, 2 })));
+        drawPile.Add(new Card(
                 "Follow-up",
                 "Attack for 2, then draw 1 card.",
                 CreateAction(
                     new[] { CombatActionType.Attack, CombatActionType.Draw },
                     new[] { CombatEffectType.None, CombatEffectType.None },
-                    new[] { 2, 1 }))
-        };
+                    new[] { 2, 1 })));
+        drawPile.Add(new Card(
+                "Poison Stab",
+                "Attack for 2, apply 2 poison.",
+                CreateAction(
+                    new[] { CombatActionType.Attack, CombatActionType.ApplyDebuff },
+                    new[] { CombatEffectType.None, CombatEffectType.Poison },
+                    new[] { 2, 2 })));
+        drawPile.Add(new Card(
+                "Fire Bash",
+                "Attack for 2, apply 3 fire.",
+                CreateAction(
+                    new[] { CombatActionType.Attack, CombatActionType.ApplyDebuff },
+                    new[] { CombatEffectType.None, CombatEffectType.Fire },
+                    new[] { 2, 3 })));
     }
 
     private static Card CreateAttackCard()
@@ -219,9 +292,9 @@ public class CardManager : MonoBehaviour
         return action;
     }
 
-    private void Shuffle(Card[] cards)
+    private void Shuffle(List<Card> cards)
     {
-        for (int i = cards.Length - 1; i > 0; i--)
+        for (int i = cards.Count - 1; i > 0; i--)
         {
             int j = UnityEngine.Random.Range(0, i + 1);
 

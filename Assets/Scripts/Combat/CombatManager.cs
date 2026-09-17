@@ -32,7 +32,7 @@ public class CombatManager : MonoBehaviour
     public CombatCatalog combatCatalog;
     private CombatEncounter currentEncounter;
     private PlayerMovement playerMovement;
-    private PlayerCombatHandler PlayerCombatHandler;
+    private PlayerCombatHandler playerCombatHandler;
     private CardManager cardManager;
     private OrbitCamera orbitCamera;
     private List<string> aliveEnemies;
@@ -45,9 +45,9 @@ public class CombatManager : MonoBehaviour
         uiManager = UIManager.Instance;
         orbitCamera = FindFirstObjectByType<OrbitCamera>();
         playerMovement = FindFirstObjectByType<PlayerMovement>();
-        PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
+        playerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
         cardManager = FindFirstObjectByType<CardManager>();
-        PlayerCombatHandler.enabled = false;      // Combat actions will be enabled when entering combat
+        playerCombatHandler.enabled = false;      // Combat actions will be enabled when entering combat
     }
 
     // Change game and camera state to combat mode
@@ -161,7 +161,7 @@ public class CombatManager : MonoBehaviour
         gameState = GameState.InCombat;
         uiManager.SetUIState(gameState);
         playerMovement.enabled = false;
-        PlayerCombatHandler.enabled = true;
+        playerCombatHandler.enabled = true;
         Debug.Log("Started combat: " + currentEncounter.encounterName);
 
         // Reset enemy states
@@ -173,7 +173,8 @@ public class CombatManager : MonoBehaviour
 
         // Prepare enemy states and cards
         ChangeEnemyStates(true, currentEncounter.enemyIds);
-        cardManager.PrepareCardsForCombat();
+        playerCombatHandler.ResetPlayerCombatState();
+        cardManager.PrepareCardsForCombat(true);
 
         // Start first player turn
         StartPlayerTurn();
@@ -188,8 +189,9 @@ public class CombatManager : MonoBehaviour
 
     public void EndPlayerTurnCB()
     {
-        // Ends player turn
+        // Ends player turn and discard remaining hand
         combatState = CombatState.EnemyTurn;
+        cardManager.DiscardCards(99);
 
         // Play enemy turns
         for (int i = 0; i < currentEncounter.enemyIds.Length; i++)
@@ -200,8 +202,17 @@ public class CombatManager : MonoBehaviour
             enemy.PlayEnemyTurn();
         }
 
-        // Start player turn again
-        StartPlayerTurn();
+        // End combat if all enemies died during their turn
+        if (aliveEnemies.Count == 0)
+        {
+            EndCombatCB(CombatResult.Victory);
+        }
+        else
+        {     
+            // Start player turn again
+            StartPlayerTurn();
+        }
+
     }
 
     // Change game and camera state back to free mode
@@ -220,12 +231,14 @@ public class CombatManager : MonoBehaviour
         {
             Debug.Log("Player was noob and run away...");
         }
+
         // Update states and enable / disable needed components
         combatState = CombatState.None;
         gameState = GameState.Free;
+        cardManager.PrepareCardsForCombat(false);
         uiManager.SetUIState(gameState);
         playerMovement.enabled = true;
-        PlayerCombatHandler.enabled = false;
+        playerCombatHandler.enabled = false;
         ChangeEnemyStates(false, currentEncounter.enemyIds);
         if (currentEncounter != null)
         {
@@ -238,7 +251,8 @@ public class CombatManager : MonoBehaviour
     {
         aliveEnemies.Remove(npcId);
         Debug.Log($"Enemy '{npcId}' defeated. {aliveEnemies.Count} enemies remaining.", this);
-        if (aliveEnemies.Count == 0)
+        // Only end combat here if enemy died from player attack
+        if (aliveEnemies.Count == 0 && combatState == CombatState.PlayerTurn)
         {
             EndCombatCB(CombatResult.Victory);
         }

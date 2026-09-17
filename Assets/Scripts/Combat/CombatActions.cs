@@ -13,7 +13,7 @@ public enum CombatEffectType
 {
     None,
     Poison,
-    Stun,
+    Fire,
     Weaken
 }
 
@@ -51,4 +51,12 @@ public class CombatAction
         CombatEffectTypes = combatEffectTypes;
         ActionValues = actionValues;
     }
+}
+
+// This class will be used to track how many turns left of each status
+public class EffectStatus
+{
+    public int Weakened;
+    public int Poisoned;
+    public int OnFire;
 }

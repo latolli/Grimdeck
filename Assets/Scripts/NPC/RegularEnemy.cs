@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 // Change to json some day
 public class EnemyCombatState
@@ -7,6 +8,7 @@ public class EnemyCombatState
     public int currentHP;
     public int currentBlock;
     public CombatAction[] actionPattern;     // Use this some beautiful day
+    public EffectStatus statusEffects;
     public bool isAlive;
 }
 
@@ -62,42 +64,109 @@ public class RegularEnemy : MonoBehaviour, IEnemy
     // Function to handle when card is played against this enemy
     public bool OnCardTarget(CombatActionType action, CombatEffectType effect, int value)
     {
-        bool cardWasPlayed = false;
-        if (enemyState == null)
+        // Check all invalid actions
+        if (enemyState == null || !enemyState.isAlive || value < 0)
         {
-            Debug.LogError($"Enemy with ID '{npcIdentity}' doesn't have valid state");
+            return false;
         }
 
-        // For now, just always do damage and have no other effects
-        if (enemyState.isAlive)
+        switch (action)
         {
-            enemyState.currentHP = Mathf.Min(
-                enemyState.currentHP + enemyState.currentBlock - value,
-                enemyState.currentHP
-            );
-            
-            Debug.Log($"Enemy ID '{npcIdentity}' took {value} damage: HP = {enemyState.currentHP}");
-            if (enemyState.currentHP <= 0)
+            case CombatActionType.Attack:
+                enemyState.currentHP = Mathf.Max(0,
+                    enemyState.currentHP - Mathf.Max(0, value - enemyState.currentBlock)
+                );
+                enemyState.currentBlock = Mathf.Max(0, enemyState.currentBlock - value);
+                Debug.Log($"Enemy ID '{npcIdentity}' took {value} damage: HP = {enemyState.currentHP}");
+                break;
+
+            case CombatActionType.ApplyDebuff:
+                switch (effect)
+                {
+                    case CombatEffectType.Poison:
+                        enemyState.statusEffects.Poisoned += value;
+                        break;
+                    case CombatEffectType.Fire:
+                        enemyState.statusEffects.OnFire += value;
+                        break;
+                    case CombatEffectType.Weaken:
+                        enemyState.statusEffects.Weakened += value;
+                        break;
+                    default:
+                        Debug.LogError($"Unsupported debuff effect '{effect}' for enemy ID '{npcIdentity}'.");
+                        return false;
+                }
+                break;
+
+            default:
+                Debug.LogError($"Unsupported card action '{action}' for enemy ID '{npcIdentity}'.");
+                return false;
+        }
+
+        if (enemyState.currentHP <= 0)
+        {
+            enemyState.currentHP = 0;
+            enemyState.isAlive = false;
+            CombatManager combatManager = FindFirstObjectByType<CombatManager>();
+            if (combatManager != null)
             {
-                CombatManager combatManager = FindFirstObjectByType<CombatManager>();
-                enemyState.currentHP = 0;
-                enemyState.isAlive = false;
                 combatManager.EnemyKilledCB(npcIdentity.Id);
             }
-            cardWasPlayed = true;
+            else
+            {
+                Debug.LogError("CombatManager not found while resolving enemy damage.");
+            }
         }
-        else
-        {
-            Debug.Log($"Enemy ID '{npcIdentity}' is already dead");
-        }
-        return cardWasPlayed;
+
+        return true;
     }
 
     public void PlayEnemyTurn()
     {
-        if (enemyState.isAlive)
+        if (enemyState == null || !enemyState.isAlive)
         {
-            Debug.Log($"Enemy {npcIdentity} played its turn and did absolutely nothing :O");
+            return;
+        }
+
+        // Apply possibly lethal effects
+        if (enemyState.statusEffects.Poisoned > 0)
+        {
+            Debug.Log($"Applied poison effect: {enemyState.statusEffects.Poisoned}");
+            enemyState.currentHP = Mathf.Max(0, enemyState.currentHP - enemyState.statusEffects.Poisoned);
+            enemyState.statusEffects.Poisoned--;
+        }
+
+        if (enemyState.statusEffects.OnFire > 0)
+        {
+            Debug.Log($"Applied fire effect: {enemyState.statusEffects.OnFire}");
+            enemyState.currentHP = Mathf.Max(0, enemyState.currentHP - 2);
+            enemyState.statusEffects.OnFire--;
+        }
+
+        // Check if enemy still alive
+        if (enemyState.currentHP <= 0)
+        {
+            enemyState.isAlive = false;
+            CombatManager combatManager = FindFirstObjectByType<CombatManager>();
+            if (combatManager != null)
+            {
+                combatManager.EnemyKilledCB(npcIdentity.Id);
+            }
+            else
+            {
+                Debug.LogError("CombatManager not found while resolving enemy status effects.");
+            }
+        }
+        else
+        {
+            // Play enemy's turn
+            double damage = UnityEngine.Random.Range(1, 3);
+            if (enemyState.statusEffects.Weakened > 0)
+            {
+                Debug.Log($"Applied weaken effect: {enemyState.statusEffects.Weakened}");
+                damage = Math.Ceiling(damage * 0.75);
+                enemyState.statusEffects.Weakened--;
+            }
         }
     }
 
@@ -111,9 +180,10 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         enemyState.maxHP = maxHP;
         enemyState.currentHP = maxHP;
         enemyState.currentBlock = 0;
+        enemyState.statusEffects = new EffectStatus();
         enemyState.isAlive = true;
 
-        int patternLength = Random.Range(1, 4);
+        int patternLength = UnityEngine.Random.Range(1, 4);
         enemyState.actionPattern = new CombatAction[patternLength];
         for (int i = 0; i < patternLength; i++)
         {

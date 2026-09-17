@@ -3,11 +3,22 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
+public class PlayerCombatState
+{
+    public int maxHP;
+    public int currentHP;
+    public int currentBlock;
+    public EffectStatus statusEffects;
+    public bool isAlive;
+}
+
 public class PlayerCombatHandler : MonoBehaviour
 {
     public LayerMask clickableLayer;
     private CombatManager combatManager;
     private CardManager cardManager;
+
+    private PlayerCombatState playerCombatState;
 
     void Start()
     {
@@ -37,31 +48,57 @@ public class PlayerCombatHandler : MonoBehaviour
         }
     }
 
-    public bool CheckCardTarget(Card card, Vector2 screenPosition)
+    public void CheckCardTarget(Card card, Vector2 screenPosition)
     {
-        bool cardPlayed = false;
         Ray ray = Camera.main.ScreenPointToRay(screenPosition);
 
         if (!Physics.Raycast(ray, out RaycastHit hit, 100f, clickableLayer))
         {
-            return false;
+            return;
         }
 
+        // Play all combat effects from card
         IEnemy enemy = hit.collider.GetComponentInParent<IEnemy>();
-        if (enemy != null)
+        CombatAction action = card.Action;
+        for (int i = 0; i < action.ActionTypes.Length; i++)
         {
-            // TODO: Next, add real card effects:
-            // Attacking enemy, gaining block to player
-            // Draw, discard, destroy mechanisms
-            int damage = Random.Range(3, 5);
-            cardPlayed = enemy.OnCardTarget(CombatActionType.Attack, CombatEffectType.None, damage);
-            // Callback that this card was played
-            if (cardPlayed)
+            CombatActionType actionType = action.ActionTypes[i];
+            // Attack or apply debuff to enemy
+            if (actionType == CombatActionType.Attack ||
+              actionType == CombatActionType.ApplyDebuff)
             {
-                cardManager.PlayCard(card);
+                enemy.OnCardTarget(
+                    actionType,
+                    action.CombatEffectTypes[i],
+                    action.ActionValues[i]);
+            }
+            // Heal or block player
+            else if (actionType == CombatActionType.Heal)
+            {
+                playerCombatState.currentHP = Mathf.Min(playerCombatState.maxHP,
+                    playerCombatState.currentHP + action.ActionValues[i]);
+                Debug.Log($"Healed player for {action.ActionValues[i]}");
+            }
+            else if (actionType == CombatActionType.Block)
+            {
+                playerCombatState.currentBlock += action.ActionValues[i];
+                Debug.Log($"Blocked player for {action.ActionValues[i]}");
             }
         }
+        cardManager.PlayCard(card);
+    }
 
-        return cardPlayed;
+    public void ResetPlayerCombatState()
+    {
+        if (playerCombatState == null)
+        {
+            playerCombatState = new PlayerCombatState();
+        }
+
+        playerCombatState.maxHP = 20;
+        playerCombatState.currentHP = 20;
+        playerCombatState.currentBlock = 0;
+        playerCombatState.statusEffects = new EffectStatus();
+        playerCombatState.isAlive = true;
     }
 }
