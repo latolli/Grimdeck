@@ -146,14 +146,13 @@ public class CardManager : MonoBehaviour
 
     public void StartTurnActions()
     {
-        // TODO: Something very weird happening and handslots decrease after first combat????
         // Draw cards
         for (int i = 0; i < 4; i++)
         {
             DrawCard();
         }
 
-        // Any effects??
+        // Any start turn effects??
         // Decrease statuses etc.
     }
 
@@ -172,6 +171,7 @@ public class CardManager : MonoBehaviour
         if (start == true)
         {
             // Init and shuffle draw pile
+            cardsInHand = 0;
             InitializeCardPiles();
             Shuffle(drawPile);
         }

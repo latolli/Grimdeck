@@ -1,17 +1,6 @@
 using UnityEngine;
 using System;
 
-// Change to json some day
-public class EnemyCombatState
-{
-    public int maxHP;
-    public int currentHP;
-    public int currentBlock;
-    public CombatAction[] actionPattern;     // Use this some beautiful day
-    public EffectStatus statusEffects;
-    public bool isAlive;
-}
-
 [RequireComponent(typeof(NPCIdentity))]
 public class RegularEnemy : MonoBehaviour, IEnemy
 {
@@ -20,7 +9,8 @@ public class RegularEnemy : MonoBehaviour, IEnemy
 
     private NPCIdentity npcIdentity;
     public CombatEncounter combatEncounter;
-    public EnemyCombatState enemyState;
+    public CombatStats enemyState;
+    public CombatAction[] actionPattern;     // Use this some beautiful day
     public int maxHP;
 
     private void Awake()
@@ -103,11 +93,11 @@ public class RegularEnemy : MonoBehaviour, IEnemy
                 return false;
         }
 
+        CombatManager combatManager = FindFirstObjectByType<CombatManager>();
         if (enemyState.currentHP <= 0)
         {
             enemyState.currentHP = 0;
             enemyState.isAlive = false;
-            CombatManager combatManager = FindFirstObjectByType<CombatManager>();
             if (combatManager != null)
             {
                 combatManager.EnemyKilledCB(npcIdentity.Id);
@@ -118,6 +108,9 @@ public class RegularEnemy : MonoBehaviour, IEnemy
             }
         }
 
+        // Update stats panel
+        combatManager.UpdateStatsPanelCB(npcIdentity.Id, enemyState, true);
+
         return true;
     }
 
@@ -127,6 +120,11 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         {
             return;
         }
+
+        CombatManager combatManager = FindFirstObjectByType<CombatManager>();
+
+        // Block goes to 0
+        enemyState.currentBlock = 0;
 
         // Apply possibly lethal effects
         if (enemyState.statusEffects.Poisoned > 0)
@@ -147,7 +145,6 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         if (enemyState.currentHP <= 0)
         {
             enemyState.isAlive = false;
-            CombatManager combatManager = FindFirstObjectByType<CombatManager>();
             if (combatManager != null)
             {
                 combatManager.EnemyKilledCB(npcIdentity.Id);
@@ -168,13 +165,15 @@ public class RegularEnemy : MonoBehaviour, IEnemy
                 enemyState.statusEffects.Weakened--;
             }
         }
+        // Update stats panel
+        combatManager.UpdateStatsPanelCB(npcIdentity.Id, enemyState, true);
     }
 
     public void ResetEnemyCombatState()
     {
         if (enemyState == null)
         {
-            enemyState = new EnemyCombatState();
+            enemyState = new CombatStats();
         }
 
         enemyState.maxHP = maxHP;
@@ -184,11 +183,14 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         enemyState.isAlive = true;
 
         int patternLength = UnityEngine.Random.Range(1, 4);
-        enemyState.actionPattern = new CombatAction[patternLength];
+        actionPattern = new CombatAction[patternLength];
         for (int i = 0; i < patternLength; i++)
         {
-            enemyState.actionPattern[i] = new CombatAction();
+            actionPattern[i] = new CombatAction();
         }
+        // Update stats panel
+        CombatManager combatManager = FindFirstObjectByType<CombatManager>();
+        combatManager.UpdateStatsPanelCB(npcIdentity.Id, enemyState, true);
     }
 
     public void NullifyCombatState()

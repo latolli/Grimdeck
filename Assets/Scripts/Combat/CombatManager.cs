@@ -25,6 +25,8 @@ public enum CombatResult
 
 public class CombatManager : MonoBehaviour
 {
+    [SerializeField] private CombatStatsPanel[] enemyStats = new CombatStatsPanel[3];
+    [SerializeField] private CombatStatsPanel[] playerStats = new CombatStatsPanel[3];
     public static CombatManager Instance;
     public GameState gameState = GameState.Free;
     public CombatState combatState = CombatState.None;
@@ -184,6 +186,7 @@ public class CombatManager : MonoBehaviour
     {
         // Start player turn
         combatState = CombatState.PlayerTurn;
+        playerCombatHandler.TurnStartEffects();
         cardManager.StartTurnActions();
     }
 
@@ -233,6 +236,11 @@ public class CombatManager : MonoBehaviour
         }
 
         // Update states and enable / disable needed components
+        for (int i = 0; i < currentEncounter.enemyIds.Length; i++)
+        {
+            enemyStats[i].ResetStats();
+            playerStats[i].ResetStats();
+        }
         combatState = CombatState.None;
         gameState = GameState.Free;
         cardManager.PrepareCardsForCombat(false);
@@ -255,6 +263,27 @@ public class CombatManager : MonoBehaviour
         if (aliveEnemies.Count == 0 && combatState == CombatState.PlayerTurn)
         {
             EndCombatCB(CombatResult.Victory);
+        }
+    }
+
+    // Give empty string or just id (0,1, or 2) for players
+    public void UpdateStatsPanelCB(string npcId, CombatStats updatedStats, bool isEnemy)
+    {
+        if (isEnemy)
+        {
+            for (int i = 0; i < currentEncounter.enemyIds.Length; i++)
+            {
+                string id = currentEncounter.enemyIds[i];
+                if (npcId == id)
+                {
+                    enemyStats[i].UpdateStats(updatedStats);
+                }
+            }
+        }
+        else
+        {
+            //int playerIndex = (int) npcId;    Something like this in future
+            playerStats[0].UpdateStats(updatedStats);
         }
     }
 }
