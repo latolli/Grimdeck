@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System;
 
 public class PlayerCombatHandler : MonoBehaviour
 {
@@ -32,7 +33,8 @@ public class PlayerCombatHandler : MonoBehaviour
         {
             if (Keyboard.current.enterKey.wasPressedThisFrame)
             {
-                combatManager.EndPlayerTurnCB();
+                // End turn
+                TurnEndEffects();
             }    
         }
     }
@@ -72,10 +74,17 @@ public class PlayerCombatHandler : MonoBehaviour
             if (actionType == CombatActionType.Attack ||
               actionType == CombatActionType.ApplyDebuff)
             {
+                // Apply potential adjustments (mainly weaken)
+                int adjustedValue = action.ActionValues[i];
+                if (actionType == CombatActionType.Attack &&
+                    playerCombatState.statusEffects.Weakened > 0)
+                {
+                    adjustedValue = (int)Math.Ceiling(adjustedValue * 0.75);
+                }
                 cardPlayed = enemy.OnCardTarget(
                     actionType,
                     action.CombatEffectTypes[i],
-                    action.ActionValues[i]);
+                    adjustedValue);
             }
             // Heal or block player if card was played
             // Offensive actions always need to happen first in order for this to work
@@ -98,10 +107,33 @@ public class PlayerCombatHandler : MonoBehaviour
         }
     }
 
-    public void TurnStartEffects()
+    // TODO: This is basically identical to the enemy side function
+    public bool TurnStartEffects()
     {
+        bool playerAlive = true;
+        // Reset block and loop active effects
         playerCombatState.currentBlock = 0;
+        if (playerCombatState.statusEffects.Poisoned > 0)
+        {
+            playerCombatState.currentHP = Mathf.Max(0, playerCombatState.currentHP - playerCombatState.statusEffects.Poisoned);
+            playerCombatState.statusEffects.Poisoned--;
+        }
+
+        if (playerCombatState.statusEffects.OnFire > 0)
+        {
+            playerCombatState.currentHP = Mathf.Max(0, playerCombatState.currentHP - 2);
+            playerCombatState.statusEffects.OnFire--;
+        }
+
+        // Check if player still alive
+        if (playerCombatState.currentHP <= 0)
+        {
+            playerCombatState.isAlive = false;
+            playerAlive = false;
+        }
+
         combatManager.UpdateStatsPanelCB("0", playerCombatState, false);
+        return playerAlive;
     }
 
     public void ResetPlayerCombatState()
@@ -117,5 +149,72 @@ public class PlayerCombatHandler : MonoBehaviour
         playerCombatState.statusEffects = new EffectStatus();
         playerCombatState.isAlive = true;
         combatManager.UpdateStatsPanelCB("0", playerCombatState, false);
+    }
+
+    // TODO: This is basically identical to the one used in enemy side -> make one common function
+    public void ApplyActionToPlayer(CombatActionType action, CombatEffectType effect, int value)
+    {
+        // Check all invalid actions
+        if (playerCombatState == null || !playerCombatState.isAlive || value < 0)
+        {
+            return;
+        }
+
+        switch (action)
+        {
+            case CombatActionType.Attack:
+                playerCombatState.currentHP = Mathf.Max(0,
+                    playerCombatState.currentHP - Mathf.Max(0, value - playerCombatState.currentBlock)
+                );
+                playerCombatState.currentBlock = Mathf.Max(0, playerCombatState.currentBlock - value);
+                Debug.Log($"Player took {value} damage: HP = {playerCombatState.currentHP}");
+                break;
+
+            case CombatActionType.ApplyDebuff:
+                switch (effect)
+                {
+                    case CombatEffectType.Poison:
+                        playerCombatState.statusEffects.Poisoned += value;
+                        break;
+                    case CombatEffectType.Fire:
+                        playerCombatState.statusEffects.OnFire += value;
+                        break;
+                    case CombatEffectType.Weaken:
+                        playerCombatState.statusEffects.Weakened += value;
+                        break;
+                    default:
+                        Debug.LogError($"Unsupported debuff effect '{effect}' for player.");
+                        return;
+                }
+                break;
+
+            default:
+                Debug.LogError($"Unsupported card action '{action}' for player.");
+                return;
+        }
+
+        // Player lost
+        if (playerCombatState.currentHP <= 0)
+        {
+            playerCombatState.currentHP = 0;
+            playerCombatState.isAlive = false;
+            combatManager.EndCombatCB(CombatResult.Defeat);
+            return;
+        }
+
+        // Update stats panel
+        combatManager.UpdateStatsPanelCB("0", playerCombatState, false);
+    }
+
+    private void TurnEndEffects()
+    {
+        // Decrease weak status
+        if (playerCombatState.statusEffects.Weakened > 0)
+        {
+            playerCombatState.statusEffects.Weakened--;
+        }
+        // Update stats panel
+        combatManager.UpdateStatsPanelCB("0", playerCombatState, false);
+        combatManager.EndPlayerTurnCB();
     }
 }

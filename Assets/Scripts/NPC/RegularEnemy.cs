@@ -10,7 +10,7 @@ public class RegularEnemy : MonoBehaviour, IEnemy
     private NPCIdentity npcIdentity;
     public CombatEncounter combatEncounter;
     public CombatStats enemyState;
-    public CombatAction[] actionPattern;     // Use this some beautiful day
+    private CombatAction[] actionPattern;     // Use this some beautiful day
     public int maxHP;
 
     private void Awake()
@@ -114,7 +114,7 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         return true;
     }
 
-    public void PlayEnemyTurn()
+    public void PlayEnemyTurn(int turnCounter)
     {
         if (enemyState == null || !enemyState.isAlive)
         {
@@ -129,14 +129,11 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         // Apply possibly lethal effects
         if (enemyState.statusEffects.Poisoned > 0)
         {
-            Debug.Log($"Applied poison effect: {enemyState.statusEffects.Poisoned}");
             enemyState.currentHP = Mathf.Max(0, enemyState.currentHP - enemyState.statusEffects.Poisoned);
             enemyState.statusEffects.Poisoned--;
         }
-
         if (enemyState.statusEffects.OnFire > 0)
         {
-            Debug.Log($"Applied fire effect: {enemyState.statusEffects.OnFire}");
             enemyState.currentHP = Mathf.Max(0, enemyState.currentHP - 2);
             enemyState.statusEffects.OnFire--;
         }
@@ -157,11 +154,38 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         else
         {
             // Play enemy's turn
-            double damage = UnityEngine.Random.Range(1, 3);
+            int patternIdx = turnCounter % actionPattern.Length;
+            CombatAction action = actionPattern[patternIdx];
+            for (int i = 0; i < action.ActionTypes.Length; i++)
+            {
+                CombatActionType actionType = action.ActionTypes[i];
+                // Attack or apply debuff
+                if (actionType == CombatActionType.Attack ||
+                actionType == CombatActionType.ApplyDebuff)
+                {
+                    combatManager.EnemyActionCB(
+                        actionType,
+                        action.CombatEffectTypes[i],
+                        action.ActionValues[i]);
+                }
+                // Heal enemy
+                else if (actionType == CombatActionType.Heal)
+                {
+                    enemyState.currentHP = Mathf.Min(enemyState.maxHP,
+                        enemyState.currentHP + action.ActionValues[i]);
+                    Debug.Log($"Healed enemy {npcIdentity.Id} for {action.ActionValues[i]}");
+                }
+                // Block enemy
+                else if (actionType == CombatActionType.Block)
+                {
+                    enemyState.currentBlock += action.ActionValues[i];
+                    Debug.Log($"Blocked enemy {npcIdentity.Id} for {action.ActionValues[i]}");
+                }
+            }
+            
+            // Decrease weak status
             if (enemyState.statusEffects.Weakened > 0)
             {
-                Debug.Log($"Applied weaken effect: {enemyState.statusEffects.Weakened}");
-                damage = Math.Ceiling(damage * 0.75);
                 enemyState.statusEffects.Weakened--;
             }
         }
@@ -182,11 +206,12 @@ public class RegularEnemy : MonoBehaviour, IEnemy
         enemyState.statusEffects = new EffectStatus();
         enemyState.isAlive = true;
 
-        int patternLength = UnityEngine.Random.Range(1, 4);
+        int patternLength = (int)Math.Ceiling(maxHP / 3.0f);
         actionPattern = new CombatAction[patternLength];
         for (int i = 0; i < patternLength; i++)
         {
-            actionPattern[i] = new CombatAction();
+            int randomNum = UnityEngine.Random.Range(0, 5);
+            actionPattern[i] = DummyActionPattern(randomNum);
         }
         // Update stats panel
         CombatManager combatManager = FindFirstObjectByType<CombatManager>();
@@ -196,5 +221,43 @@ public class RegularEnemy : MonoBehaviour, IEnemy
     public void NullifyCombatState()
     {
         enemyState = null;
+    }
+
+    // Function to generate actions for enemies
+    // Temp solution, each enemy will have unique patterns later
+    private static CombatAction DummyActionPattern(int index)
+    {
+        CombatAction action = new CombatAction();
+        if (index == 0)
+        {
+            action.ActionTypes = new[] { CombatActionType.Block };
+            action.CombatEffectTypes = new[] { CombatEffectType.None };
+            action.ActionValues = new[] { 3 };
+        }
+        else if (index == 1)
+        {
+            action.ActionTypes = new[] { CombatActionType.Attack };
+            action.CombatEffectTypes = new[] { CombatEffectType.None };
+            action.ActionValues = new[] { 2 };
+        }
+        else if (index == 2)
+        {
+            action.ActionTypes = new[] { CombatActionType.Attack, CombatActionType.ApplyDebuff };
+            action.CombatEffectTypes = new[] { CombatEffectType.None, CombatEffectType.Poison };
+            action.ActionValues = new[] { 2, 3 };
+        }
+        else if (index == 3)
+        {
+            action.ActionTypes = new[] { CombatActionType.Block, CombatActionType.ApplyDebuff };
+            action.CombatEffectTypes = new[] { CombatEffectType.None, CombatEffectType.Fire };
+            action.ActionValues = new[] { 1, 3 };
+        }
+        else
+        {
+            action.ActionTypes = new[] { CombatActionType.Heal, CombatActionType.ApplyDebuff };
+            action.CombatEffectTypes = new[] { CombatEffectType.None, CombatEffectType.Weaken };
+            action.ActionValues = new[] { 2, 3 };
+        }
+        return action;
     }
 }

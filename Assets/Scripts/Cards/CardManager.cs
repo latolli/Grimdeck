@@ -5,13 +5,15 @@ using UnityEngine.Events;
 
 public class CardManager : MonoBehaviour
 {
+    [SerializeField] private CardPileUI drawPileUI;
+    [SerializeField] private CardPileUI discardPileUI;
     [SerializeField] private HandCard[] slots = new HandCard[6];
     [SerializeField, Range(0, 6)] private int startingCardCount;
     [SerializeField] private List<int> cardAddOrder = new List<int>
     {
         5, 6, 4, 7, 3, 8, 2, 9, 1, 10
     };
-    [SerializeField] private UnityEvent<GameObject> onCardPlayed;
+    //[SerializeField] private UnityEvent<GameObject> onCardPlayed;
 
     // Init lists for keeping track of cards
     //private Card[] drawPile;
@@ -142,6 +144,9 @@ public class CardManager : MonoBehaviour
                 Debug.Log("Destroying card...");
             }
         }
+        // Update pile UIs
+        discardPileUI.UpdatePileUI(discardPile.Count);
+        drawPileUI.UpdatePileUI(drawPile.Count);
     }
 
     public void StartTurnActions()
@@ -151,6 +156,9 @@ public class CardManager : MonoBehaviour
         {
             DrawCard();
         }
+        // Update pile UIs
+        discardPileUI.UpdatePileUI(discardPile.Count);
+        drawPileUI.UpdatePileUI(drawPile.Count);
 
         // Any start turn effects??
         // Decrease statuses etc.
@@ -175,6 +183,11 @@ public class CardManager : MonoBehaviour
             InitializeCardPiles();
             Shuffle(drawPile);
         }
+        else
+        {
+            discardPileUI.ResetPileUI();
+            drawPileUI.ResetPileUI();
+        }
     }
 
     public void DiscardCards(int discardAmount)
@@ -194,6 +207,8 @@ public class CardManager : MonoBehaviour
                 }
             }
         }
+        // Update pile UI
+        discardPileUI.UpdatePileUI(discardPile.Count);
         // If not, let player choose
         // TODO:
     }
@@ -256,6 +271,10 @@ public class CardManager : MonoBehaviour
                     new[] { CombatActionType.Attack, CombatActionType.ApplyDebuff },
                     new[] { CombatEffectType.None, CombatEffectType.Fire },
                     new[] { 2, 3 })));
+                    
+        // Update pile UIs
+        discardPileUI.UpdatePileUI(discardPile.Count);
+        drawPileUI.UpdatePileUI(drawPile.Count);
     }
 
     private static Card CreateAttackCard()

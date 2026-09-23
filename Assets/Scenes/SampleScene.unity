@@ -2674,6 +2674,8 @@ GameObject:
   - component: {fileID: 845227079}
   - component: {fileID: 845227078}
   - component: {fileID: 845227080}
+  - component: {fileID: 845227082}
+  - component: {fileID: 845227081}
   m_Layer: 7
   m_Name: DiscardPile
   m_TagString: Untagged
@@ -2766,6 +2768,30 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &845227081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 845227076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07a8554fd15189f4cbd23b99accc2a00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!225 &845227082
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 845227076}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &851768486
 GameObject:
   m_ObjectHideFlags: 0
@@ -2994,6 +3020,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a1aee3dd50b8524a91e569befd1d786, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  drawPileUI: {fileID: 1525533846}
+  discardPileUI: {fileID: 845227081}
   slots:
   - {fileID: 393085922}
   - {fileID: 2004029319}
@@ -3003,9 +3031,6 @@ MonoBehaviour:
   - {fileID: 888264313}
   startingCardCount: 4
   cardAddOrder: 030000000400000002000000050000000100000006000000
-  onCardPlayed:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1 &1008542404
 GameObject:
   m_ObjectHideFlags: 0
@@ -4086,6 +4111,8 @@ GameObject:
   - component: {fileID: 1525533844}
   - component: {fileID: 1525533843}
   - component: {fileID: 1525533845}
+  - component: {fileID: 1525533847}
+  - component: {fileID: 1525533846}
   m_Layer: 7
   m_Name: DrawPile
   m_TagString: Untagged
@@ -4178,6 +4205,30 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &1525533846
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525533841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07a8554fd15189f4cbd23b99accc2a00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!225 &1525533847
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525533841}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &1591708878
 GameObject:
   m_ObjectHideFlags: 0

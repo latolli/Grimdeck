@@ -14,5 +14,6 @@ public class CardPile : MonoBehaviour, IPointerClickHandler
         GameObject clickedCard = eventData.pointerClick;
         Debug.Log("Clicked: " + clickedCard);
         onClicked?.Invoke(gameObject);
+        // TODO: This should open draw/discard pile view
     }
 }

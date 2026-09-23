@@ -56,6 +56,7 @@ public class CombatStatsPanel : MonoBehaviour
         text.alignment = TextAlignmentOptions.Center;
         text.textWrappingMode = TextWrappingModes.Normal;
         text.fontSize = 22;
+        text.color = Color.black;
         text.text = BuildStatsText(newStats);
     }
 

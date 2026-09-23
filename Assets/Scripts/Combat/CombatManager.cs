@@ -39,6 +39,8 @@ public class CombatManager : MonoBehaviour
     private OrbitCamera orbitCamera;
     private List<string> aliveEnemies;
     public int numPlayers = 1;  // Hardcoded for now, can be set dynamically later
+    private int playerTurnCounter;
+    private int enemyTurnCounter;
 
     void Awake() => Instance = this;
 
@@ -118,7 +120,6 @@ public class CombatManager : MonoBehaviour
         orbitCamera.SetCombatCameraPosition(firstPlayerPos, currentEncounter.encounterCenter);
         // Move players
         playerMovement.MovePlayerToTile(playerTiles[0], currentEncounter.encounterCenter);
-        Debug.Log("Preparing combat: " + currentEncounter.encounterName);
     }
 
     void ChangeEnemyStates(bool start, string[] enemyList)
@@ -164,7 +165,8 @@ public class CombatManager : MonoBehaviour
         uiManager.SetUIState(gameState);
         playerMovement.enabled = false;
         playerCombatHandler.enabled = true;
-        Debug.Log("Started combat: " + currentEncounter.encounterName);
+        playerTurnCounter = 0;
+        enemyTurnCounter = 0;
 
         // Reset enemy states
         if (NPCRegistry.Instance == null)
@@ -186,8 +188,16 @@ public class CombatManager : MonoBehaviour
     {
         // Start player turn
         combatState = CombatState.PlayerTurn;
-        playerCombatHandler.TurnStartEffects();
-        cardManager.StartTurnActions();
+        bool playerAlive = playerCombatHandler.TurnStartEffects();
+        if (playerAlive)
+        {
+            cardManager.StartTurnActions();
+        }
+        else
+        {
+            // Player died to poison or something...
+            EndCombatCB(CombatResult.Defeat);
+        }
     }
 
     public void EndPlayerTurnCB()
@@ -195,6 +205,7 @@ public class CombatManager : MonoBehaviour
         // Ends player turn and discard remaining hand
         combatState = CombatState.EnemyTurn;
         cardManager.DiscardCards(99);
+        playerTurnCounter++;
 
         // Play enemy turns
         for (int i = 0; i < currentEncounter.enemyIds.Length; i++)
@@ -202,7 +213,8 @@ public class CombatManager : MonoBehaviour
             string id = currentEncounter.enemyIds[i];
             NPCRegistry.Instance.TryGetNPC(id, out NPCIdentity npc);
             RegularEnemy enemy = npc.GetComponent<RegularEnemy>();
-            enemy.PlayEnemyTurn();
+            enemy.PlayEnemyTurn(enemyTurnCounter);
+            enemyTurnCounter++;
         }
 
         // End combat if all enemies died during their turn
@@ -215,7 +227,12 @@ public class CombatManager : MonoBehaviour
             // Start player turn again
             StartPlayerTurn();
         }
+    }
 
+    // Function to handle enemy's action towards player
+    public void EnemyActionCB(CombatActionType action, CombatEffectType effect, int value)
+    {
+        playerCombatHandler.ApplyActionToPlayer(action, effect, value);
     }
 
     // Change game and camera state back to free mode
@@ -247,11 +264,9 @@ public class CombatManager : MonoBehaviour
         uiManager.SetUIState(gameState);
         playerMovement.enabled = true;
         playerCombatHandler.enabled = false;
+        //playerTurnCounter = 0;
+        //enemyTurnCounter = 0;
         ChangeEnemyStates(false, currentEncounter.enemyIds);
-        if (currentEncounter != null)
-        {
-            Debug.Log("Ended combat: " + currentEncounter.encounterName);
-        }
         currentEncounter = null;
     }
 
