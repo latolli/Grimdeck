@@ -1,7 +1,15 @@
 using System.Collections.Generic;
 using System;
 using UnityEngine;
-using UnityEngine.Events;
+
+public enum CardManagerState
+{
+    None,
+    Preparing,
+    Playing,
+    Discarding,
+    Destroying
+}
 
 public class CardManager : MonoBehaviour
 {
@@ -22,6 +30,10 @@ public class CardManager : MonoBehaviour
     private Card[] handCards = new Card[6];     // Indexing of handCards should follow UI handcard slots
     private List<Card> destroyedPile;
     private int cardsInHand;
+    private int cardsToDiscard;
+    private int cardsToDestroy;
+
+    public CardManagerState cardManagerState;
 
     public int CardCount { get; private set; }
     public int MaxCards => slots.Length;
@@ -45,6 +57,8 @@ public class CardManager : MonoBehaviour
             slots[i].gameObject.SetActive(false);
             slots[i].SetOwner(this);
         }
+        cardManagerState = CardManagerState.None;
+        cardsToDiscard = 0;
     }
 
     public void DrawCard()
@@ -135,13 +149,11 @@ public class CardManager : MonoBehaviour
             }
             else if (actionType == CombatActionType.Discard)
             {
-                // TODO:
-                Debug.Log("Discarding card...");
+                DiscardCards(action.ActionValues[i]);
             }
             else if (actionType == CombatActionType.Destroy)
             {
-                // TODO:
-                Debug.Log("Destroying card...");
+                DestroyCards(action.ActionValues[i]);
             }
         }
         // Update pile UIs
@@ -176,15 +188,20 @@ public class CardManager : MonoBehaviour
             }
         }
 
+        cardsToDiscard = 0;
+        cardsToDestroy = 0;
+
         if (start == true)
         {
             // Init and shuffle draw pile
+            cardManagerState = CardManagerState.Playing;
             cardsInHand = 0;
             InitializeCardPiles();
             Shuffle(drawPile);
         }
         else
         {
+            cardManagerState = CardManagerState.None;
             discardPileUI.ResetPileUI();
             drawPileUI.ResetPileUI();
         }
@@ -192,6 +209,14 @@ public class CardManager : MonoBehaviour
 
     public void DiscardCards(int discardAmount)
     {
+        if (discardAmount <= 0)
+        {
+            Debug.LogWarning("Discard amount must be greater than zero.", this);
+            cardManagerState = CardManagerState.Playing;
+            return;
+        }
+
+        cardManagerState = CardManagerState.Discarding;
         // Check if this is discard all situation
         if (discardAmount >= cardsInHand)
         {
@@ -206,11 +231,110 @@ public class CardManager : MonoBehaviour
                     cardsInHand--;
                 }
             }
+            cardsToDiscard = 0;
+            cardManagerState = CardManagerState.Playing;
         }
-        // Update pile UI
+        // If not, add count as pending discards
+        else
+        {
+            Debug.Log($"Starting to discard {discardAmount} cards");
+            cardsToDiscard += discardAmount;
+        }
         discardPileUI.UpdatePileUI(discardPile.Count);
-        // If not, let player choose
-        // TODO:
+    }
+
+    public void DestroyCards(int destroyAmount)
+    {
+        if (destroyAmount <= 0)
+        {
+            Debug.LogWarning("Destroy amount must be greater than zero.", this);
+            cardManagerState = CardManagerState.Playing;
+            return;
+        }
+
+        cardManagerState = CardManagerState.Destroying;
+        if (destroyAmount >= cardsInHand)
+        {
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (handCards[i] != null)
+                {
+                    destroyedPile.Add(handCards[i]);
+                    slots[i].gameObject.SetActive(false);
+                    handCards[i] = null;
+                    cardsInHand--;
+                }
+            }
+            cardsToDestroy = 0;
+            cardManagerState = CardManagerState.Playing;
+        }
+        else
+        {
+            Debug.Log($"Starting to destroy {destroyAmount} cards");
+            cardsToDestroy += destroyAmount;
+        }
+    }
+
+    // Callback function from HandCard to discard clicked card
+    public void DiscardChosenCard(Card discardCard)
+    {
+        if (cardsToDiscard > 0 && cardManagerState == CardManagerState.Discarding)
+        {
+            // Check which card was discarded and free its slot
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (discardCard == handCards[i])
+                {
+                    // Remove card from slot
+                    slots[i].gameObject.SetActive(false);
+                    handCards[i] = null;
+                    cardsInHand--;
+                    discardPile.Add(discardCard);
+                    cardsToDiscard--;
+                    Debug.Log($"Cards left to discard: {cardsToDiscard}");
+                    if (cardsToDiscard == 0)
+                    {
+                        cardManagerState = CardManagerState.Playing;
+                    }
+                    break;
+                }
+            }  
+            discardPileUI.UpdatePileUI(discardPile.Count);
+        }
+        else
+        {
+            cardManagerState = CardManagerState.Playing;
+            Debug.LogWarning("Discard card counter is incorrect." + cardsToDiscard);
+        }
+    }
+
+    public void DestroyChosenCard(Card destroyCard)
+    {
+        if (cardsToDestroy > 0 && cardManagerState == CardManagerState.Destroying)
+        {
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (destroyCard == handCards[i])
+                {
+                    slots[i].gameObject.SetActive(false);
+                    handCards[i] = null;
+                    cardsInHand--;
+                    destroyedPile.Add(destroyCard);
+                    cardsToDestroy--;
+                    Debug.Log($"Cards left to destroy: {cardsToDestroy}");
+                    if (cardsToDestroy == 0)
+                    {
+                        cardManagerState = CardManagerState.Playing;
+                    }
+                    break;
+                }
+            }
+        }
+        else
+        {
+            cardManagerState = CardManagerState.Playing;
+            Debug.LogWarning("Card destroy counter is incorrect: " + cardsToDestroy);
+        }
     }
 
     private void InitializeCardPiles()
@@ -231,11 +355,11 @@ public class CardManager : MonoBehaviour
         }
         drawPile.Add(new Card(
                 "Quick Discard",
-                "Draw 2 cards, then discard 1 card.",
+                "Draw 2, discard 2.",
                 CreateAction(
                     new[] { CombatActionType.Draw, CombatActionType.Discard },
                     new[] { CombatEffectType.None, CombatEffectType.None },
-                    new[] { 2, 1 })));
+                    new[] { 2, 2 })));
         drawPile.Add(new Card(
                 "Quick Destroy",
                 "Draw 2 cards, then destroy 1 card.",
@@ -271,6 +395,13 @@ public class CardManager : MonoBehaviour
                     new[] { CombatActionType.Attack, CombatActionType.ApplyDebuff },
                     new[] { CombatEffectType.None, CombatEffectType.Fire },
                     new[] { 2, 3 })));
+        drawPile.Add(new Card(
+                "Prepared",
+                "Draw 2, destroy 2",
+                CreateAction(
+                    new[] { CombatActionType.Draw, CombatActionType.Destroy },
+                    new[] { CombatEffectType.None, CombatEffectType.None },
+                    new[] { 2, 2 })));
                     
         // Update pile UIs
         discardPileUI.UpdatePileUI(discardPile.Count);

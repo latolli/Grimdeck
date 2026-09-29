@@ -7,7 +7,8 @@ using TMPro;
 public class HandCard : MonoBehaviour,
     IBeginDragHandler,
     IDragHandler,
-    IEndDragHandler
+    IEndDragHandler,
+    IPointerClickHandler
 {
     private Canvas rootCanvas;
     private RectTransform canvasRect;
@@ -68,8 +69,24 @@ public class HandCard : MonoBehaviour,
             canvasGroup.blocksRaycasts = true;
 
         SetArrowVisible(false);
-        PlayerCombatHandler PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
-        PlayerCombatHandler.CheckCardTarget(this.card, eventData.position);
+        if (owner.cardManagerState == CardManagerState.Playing)
+        {
+            PlayerCombatHandler PlayerCombatHandler = FindFirstObjectByType<PlayerCombatHandler>();
+            PlayerCombatHandler.CheckCardTarget(this.card, eventData.position);
+        }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        Debug.Log("Clicked: " + this.card);
+        if (owner.cardManagerState == CardManagerState.Discarding)
+        {
+            owner.DiscardChosenCard(this.card);
+        }
+        else if (owner.cardManagerState == CardManagerState.Destroying)
+        {
+            owner.DestroyChosenCard(this.card);
+        }
     }
 
     private void RenderCard(Card card)
