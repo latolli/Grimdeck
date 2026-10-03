@@ -10,6 +10,7 @@ public class UIManager : MonoBehaviour
     public GameObject discardPilePanel;
     public GameObject freeRoamHUD;
     public GameObject combatHUD;
+    public GameObject collectionPanel;
 
     private CombatManager combatManager;
 
@@ -19,6 +20,7 @@ public class UIManager : MonoBehaviour
     {
         combatManager = CombatManager.Instance;
         SetUIState(combatManager.gameState);
+        collectionPanel.SetActive(false);
     }
 
     public void SetUIState(GameState state)
@@ -27,4 +29,9 @@ public class UIManager : MonoBehaviour
         freeRoamHUD.SetActive(isFreeRoam);
         combatHUD.SetActive(!isFreeRoam);
     }
+
+    //public void SetCollectionUI(bool newState)
+    //{
+    //    collectionPanel.SetActive(newState);
+    //}
 }

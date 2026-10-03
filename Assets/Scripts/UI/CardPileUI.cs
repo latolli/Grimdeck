@@ -41,7 +41,7 @@ public class CardPileUI : MonoBehaviour
         TextMeshProUGUI displayText = renderedText.AddComponent<TextMeshProUGUI>();
         displayText.alignment = TextAlignmentOptions.Center;
         displayText.textWrappingMode = TextWrappingModes.Normal;
-        displayText.fontSize = 22;
+        displayText.fontSize = 36;
         displayText.color = Color.black;
         displayText.text = text ?? string.Empty;
     }

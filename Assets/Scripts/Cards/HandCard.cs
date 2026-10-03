@@ -140,7 +140,7 @@ public class HandCard : MonoBehaviour,
             "Title",
             card.Title,
             cardRect,
-            12,
+            26,
             new Vector2(0f, 0.8f),
             new Vector2(1f, 1f));
 
@@ -148,7 +148,7 @@ public class HandCard : MonoBehaviour,
             "Description",
             card.Description,
             cardRect,
-            11,
+            22,
             new Vector2(0.1f, 0.1f),
             new Vector2(0.9f, 0.5f));
     }
